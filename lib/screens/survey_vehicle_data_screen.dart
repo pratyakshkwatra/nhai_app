@@ -1148,19 +1148,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                               alignment: Alignment.bottomRight,
                                               children: [
                                                 playerWidget!,
-                                                // Padding(
-                                                //   padding:
-                                                //       const EdgeInsets.only(
-                                                //           bottom: 8, right: 8),
-                                                //   child: GestureDetector(
-                                                //     onTap: () {
-                                                //       showVideoFullScreenDialog(
-                                                //           position,
-                                                //           duration,
-                                                //           setstateInner);
-                                                //     },
-                                                //   ),
-                                                // ),
+                                                
                                               ],
                                             )),
                                       ),
