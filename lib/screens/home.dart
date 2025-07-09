@@ -8,6 +8,7 @@ import 'package:nhai_app/models/survey.dart';
 import 'package:nhai_app/screens/survey_vehicle_data_screen.dart';
 import 'package:rounded_expansion_tile/rounded_expansion_tile.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -242,8 +243,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  exportData(String date, double distance, double roadHealth, double roughness, double rut, double crack, double ravelling) {
-
+  shareData(String date, double distance, double roadHealth, double roughness,
+      double rut, double crack, double ravelling, Survey survey) async {
+    SharePlus.instance.share(ShareParams(
+        text:
+            '*Survey: ${survey.roadway}-${survey.lane}*\n\n*Date*: $date\n*Distance Covered*: ${distance.toStringAsFixed(2)}\n*Road Health*: ${roadHealth.toStringAsFixed(2)}/5 ❤️\n\n*Roughness*: ${roughness.toStringAsFixed(2)}\n*Rut*: ${rut.toStringAsFixed(2)}\n*Crack*: ${crack.toStringAsFixed(2)}\n*Ravelling*: ${ravelling.toStringAsFixed(2)}'));
   }
 
   @override
@@ -480,7 +484,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             0.4,
                                                         child: ElevatedButton(
                                                           onPressed: () {
-                                                            exportData(survey.date, distance, roadHealth, roughness, rut, crack, ravelling);
+                                                            shareData(
+                                                              survey.date,
+                                                              distance,
+                                                              roadHealth,
+                                                              roughness,
+                                                              rut,
+                                                              crack,
+                                                              ravelling,
+                                                              survey,
+                                                            );
                                                           },
                                                           style: ElevatedButton
                                                               .styleFrom(
@@ -517,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                     .black,
                                                               ),
                                                               Text(
-                                                                'EXPORT',
+                                                                'SHARE',
                                                                 style:
                                                                     GoogleFonts
                                                                         .poppins(
