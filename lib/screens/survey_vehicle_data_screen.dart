@@ -83,11 +83,12 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
             padding: const EdgeInsets.only(bottom: 8, right: 8),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white54,
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.fullscreen,
+                color: Colors.white,
                 size: 32,
               ),
             ),
@@ -192,53 +193,70 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                   builder: (BuildContext context) {
                     return Dialog(
                       backgroundColor: Colors.transparent,
-                      insetPadding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 48),
                       child:
-                          StatefulBuilder(builder: (context, setStateDialog) {
+                          StatefulBuilder(builder: (context, setStateWarnings) {
                         return Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          padding: const EdgeInsets.all(16),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 6, horizontal: 10),
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            "$text Graph",
-                                            style: GoogleFonts.poppins(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w600),
-                                          ),
-                                        ],
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                    topRight: Radius.circular(12),
+                                  ),
+                                ),
+                                padding: EdgeInsets.all(8),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 6, horizontal: 10),
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              "$text Graph",
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => Navigator.of(context).pop(),
-                                    child: const CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: Colors.black,
-                                      child: Icon(Icons.close,
-                                          color: Colors.white, size: 18),
+                                    GestureDetector(
+                                      onTap: () => Navigator.of(context).pop(),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          color: Colors.black,
+                                        ),
+                                        child: const CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: Colors.black,
+                                          child: Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 16),
                               valList.length == 1
@@ -247,12 +265,33 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                           MediaQuery.of(context).size.height *
                                               0.30,
                                       child: Center(
-                                        child: Text(
-                                          "No Data Available",
-                                          style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 24,
-                                          ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              "No Data Available",
+                                              style: GoogleFonts.poppins(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 24,
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 18),
+                                              child: Text(
+                                                "Move forward in time using the play/pause button or the progress bar!",
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.w300,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     )
@@ -367,71 +406,98 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                                                   entry.value,
                                                             })
                                                         .toList();
-                                                return Chart(
-                                                  key: ValueKey(
-                                                      selectedChip.value),
-                                                  data: [...chartData],
-                                                  variables: {
-                                                    'index': Variable(
-                                                      accessor: (Map map) =>
-                                                          map['index']
-                                                              .toString(),
-                                                      scale: OrdinalScale(),
-                                                    ),
-                                                    'value': Variable(
+                                                return ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadiusGeometry
+                                                          .circular(12),
+                                                  child: Chart(
+                                                    key: ValueKey(
+                                                        selectedChip.value),
+                                                    data: [...chartData],
+                                                    variables: {
+                                                      'index': Variable(
                                                         accessor: (Map map) =>
-                                                            map['value']
-                                                                as num),
-                                                  },
-                                                  marks: [
-                                                    LineMark(
-                                                      shape: ShapeEncode(
-                                                          value: BasicLineShape(
-                                                              smooth: true)),
-                                                      color: ColorEncode(
-                                                          value:
-                                                              Colors.redAccent),
-                                                      size:
-                                                          SizeEncode(value: 1),
-                                                    ),
-                                                    PointMark(
-                                                      color: ColorEncode(
-                                                          value:
-                                                              Colors.redAccent),
-                                                      size:
-                                                          SizeEncode(value: 2),
-                                                    ),
-                                                  ],
-                                                  axes: [
-                                                    AxisGuide(
+                                                            map['index']
+                                                                .toString(),
+                                                        scale: OrdinalScale(),
+                                                      ),
+                                                      'value': Variable(
+                                                          accessor: (Map map) =>
+                                                              map['value']
+                                                                  as num),
+                                                    },
+                                                    marks: [
+                                                      LineMark(
+                                                        shape: ShapeEncode(
+                                                            value:
+                                                                BasicLineShape(
+                                                                    smooth:
+                                                                        true,
+                                                                    stepped:
+                                                                        true)),
+                                                        color: ColorEncode(
+                                                            value: Colors
+                                                                .redAccent
+                                                                .shade200),
+                                                        size: SizeEncode(
+                                                            value: 4),
+                                                      ),
+                                                      AreaMark(
+                                                        color: ColorEncode(
+                                                            value: Colors
+                                                                .red.shade50),
+                                                        shape: ShapeEncode(
+                                                            value:
+                                                                BasicAreaShape(
+                                                                    smooth:
+                                                                        true,
+                                                                    stepped:
+                                                                        false)),
+                                                      ),
+                                                      PointMark(
+                                                        color: ColorEncode(
+                                                            value: Colors
+                                                                .redAccent),
+                                                        size: SizeEncode(
+                                                            value: 2),
+                                                      ),
+                                                    ],
+                                                    axes: [
+                                                      AxisGuide(
+                                                          dim: Dim.x,
+                                                          tickLine: TickLine(
+                                                              style: PaintStyle(
+                                                                  fillColor: Colors
+                                                                      .transparent,
+                                                                  strokeColor:
+                                                                      Colors
+                                                                          .transparent))),
+                                                      Defaults.verticalAxis,
+                                                    ],
+                                                    selections: {
+                                                      'tap': PointSelection(
+                                                        on: {GestureType.tap},
                                                         dim: Dim.x,
-                                                        tickLine: TickLine(
-                                                            style: PaintStyle(
-                                                                fillColor: Colors
-                                                                    .transparent,
-                                                                strokeColor: Colors
-                                                                    .transparent))),
-                                                    Defaults.verticalAxis,
-                                                  ],
-                                                  selections: {
-                                                    'tap': PointSelection(
-                                                      on: {GestureType.tap},
-                                                      dim: Dim.x,
-                                                    ),
-                                                  },
-                                                  tooltip: TooltipGuide(
-                                                      radius:
-                                                          Radius.circular(12)),
+                                                      ),
+                                                    },
+                                                    tooltip: TooltipGuide(
+                                                        radius: Radius.circular(
+                                                            12)),
+                                                  ),
                                                 );
                                               }),
                                         ),
-                                        Align(
-                                          alignment: Alignment.bottomRight,
-                                          child: Text(
-                                            "* 1u = 100 Chn",
-                                            style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w300),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: 8, bottom: 8),
+                                          child: Align(
+                                            alignment: Alignment.bottomRight,
+                                            child: Text(
+                                              "* 1u = 100 Chn",
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w300),
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -732,10 +798,6 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                             return Dialog(
                                                 backgroundColor:
                                                     Colors.transparent,
-                                                insetPadding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 24,
-                                                        vertical: 48),
                                                 child: StatefulBuilder(builder:
                                                     (context,
                                                         setStateWarnings) {
@@ -746,67 +808,95 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                                           BorderRadius.circular(
                                                               16),
                                                     ),
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16),
                                                     child: Column(
                                                       mainAxisSize:
                                                           MainAxisSize.min,
                                                       children: [
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            Container(
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                color: Colors
-                                                                    .redAccent,
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            12),
-                                                              ),
-                                                              child: Padding(
-                                                                padding: const EdgeInsets
-                                                                    .symmetric(
-                                                                    vertical: 6,
-                                                                    horizontal:
-                                                                        10),
-                                                                child: Row(
-                                                                  children: [
-                                                                    Text(
-                                                                      "Warnings",
-                                                                      style: GoogleFonts.poppins(
-                                                                          fontSize:
-                                                                              18,
-                                                                          fontWeight:
-                                                                              FontWeight.w600),
-                                                                    ),
-                                                                  ],
+                                                        Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors
+                                                                .redAccent,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .only(
+                                                              topLeft: Radius
+                                                                  .circular(12),
+                                                              topRight: Radius
+                                                                  .circular(12),
+                                                            ),
+                                                          ),
+                                                          padding:
+                                                              EdgeInsets.all(8),
+                                                          child: Row(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            children: [
+                                                              Container(
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color: Colors
+                                                                      .redAccent,
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              12),
+                                                                ),
+                                                                child: Padding(
+                                                                  padding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      vertical:
+                                                                          6,
+                                                                      horizontal:
+                                                                          10),
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Text(
+                                                                        "Warnings",
+                                                                        style: GoogleFonts.poppins(
+                                                                            fontSize:
+                                                                                18,
+                                                                            fontWeight:
+                                                                                FontWeight.w600),
+                                                                      ),
+                                                                    ],
+                                                                  ),
                                                                 ),
                                                               ),
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () =>
-                                                                  Navigator.of(
-                                                                          context)
-                                                                      .pop(),
-                                                              child:
-                                                                  const CircleAvatar(
-                                                                radius: 16,
-                                                                backgroundColor:
-                                                                    Colors
-                                                                        .black,
-                                                                child: Icon(
-                                                                    Icons.close,
+                                                              GestureDetector(
+                                                                onTap: () =>
+                                                                    Navigator.of(
+                                                                            context)
+                                                                        .pop(),
+                                                                child:
+                                                                    Container(
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    borderRadius:
+                                                                        BorderRadius
+                                                                            .circular(8),
                                                                     color: Colors
-                                                                        .white,
-                                                                    size: 18),
+                                                                        .black,
+                                                                  ),
+                                                                  child:
+                                                                      const CircleAvatar(
+                                                                    radius: 16,
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .black,
+                                                                    child: Icon(
+                                                                      Icons
+                                                                          .close,
+                                                                      color: Colors
+                                                                          .white,
+                                                                      size: 20,
+                                                                    ),
+                                                                  ),
+                                                                ),
                                                               ),
-                                                            ),
-                                                          ],
+                                                            ],
+                                                          ),
                                                         ),
                                                         const SizedBox(
                                                             height: 16),
@@ -822,97 +912,117 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                                                           Alignment
                                                                               .center,
                                                                       child:
+                                                                          Column(
+                                                                        mainAxisAlignment:
+                                                                            MainAxisAlignment.center,
+                                                                        crossAxisAlignment:
+                                                                            CrossAxisAlignment.center,
+                                                                        children: [
                                                                           Text(
-                                                                        "No Warnings found!",
-                                                                        style: GoogleFonts
-                                                                            .poppins(
-                                                                          fontSize:
-                                                                              24,
-                                                                        ),
+                                                                            "No Data Available",
+                                                                            style:
+                                                                                GoogleFonts.poppins(
+                                                                              fontWeight: FontWeight.w600,
+                                                                              fontSize: 24,
+                                                                            ),
+                                                                          ),
+                                                                          Padding(
+                                                                            padding:
+                                                                                const EdgeInsets.symmetric(horizontal: 18),
+                                                                            child:
+                                                                                Text(
+                                                                              "Move forward in time using the play/pause button or the progress bar!",
+                                                                              textAlign: TextAlign.center,
+                                                                              style: GoogleFonts.poppins(
+                                                                                fontWeight: FontWeight.w300,
+                                                                                fontSize: 14,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        ],
                                                                       ),
                                                                     )
-                                                                  : ListView
-                                                                      .builder(
-                                                                      shrinkWrap:
-                                                                          true,
-                                                                      padding:
-                                                                          EdgeInsets
-                                                                              .zero,
-                                                                      itemCount:
-                                                                          warnings
-                                                                              .length,
-                                                                      itemBuilder:
-                                                                          (context,
-                                                                              index) {
-                                                                        if (warnings[index]
-                                                                            .checkedOff) {
-                                                                          return SizedBox();
-                                                                        }
-                                                                        return Container(
-                                                                          margin: const EdgeInsets
-                                                                              .symmetric(
-                                                                              vertical: 6),
-                                                                          padding: const EdgeInsets
-                                                                              .all(
-                                                                              12),
-                                                                          decoration:
-                                                                              BoxDecoration(
-                                                                            color:
-                                                                                Colors.grey.shade100,
-                                                                            borderRadius:
-                                                                                BorderRadius.circular(12),
-                                                                            border:
-                                                                                Border.all(color: Colors.black12),
-                                                                          ),
-                                                                          child:
-                                                                              Row(
-                                                                            crossAxisAlignment:
-                                                                                CrossAxisAlignment.center,
-                                                                            mainAxisAlignment:
-                                                                                MainAxisAlignment.start,
-                                                                            children: [
-                                                                              GestureDetector(
-                                                                                onTap: () {
-                                                                                  warnings[index].checkedOff = true;
-                                                                                  setStateWarnings(() {});
-                                                                                  setstateInner(() {});
-                                                                                },
-                                                                                child: const Icon(Icons.check, color: Colors.black),
-                                                                              ),
-                                                                              const SizedBox(width: 12),
-                                                                              Expanded(
-                                                                                child: Column(
-                                                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                  children: [
-                                                                                    Text(
-                                                                                      '${warnings[index].valType.toString().toUpperCase().replaceAll("VALTYPE.", "")}: ${warnings[index].recvValue} / ${warnings[index].limit}',
-                                                                                      style: TextStyle(
-                                                                                        fontWeight: FontWeight.bold,
-                                                                                        fontSize: 16,
-                                                                                      ),
-                                                                                    ),
-                                                                                    SizedBox(height: 4),
-                                                                                    Text(
-                                                                                      "${warnings[index].message}\n⏰ ${formatDuration(warnings[index].duration)}",
-                                                                                      style: TextStyle(
-                                                                                        fontSize: 13,
-                                                                                        color: Colors.black87,
-                                                                                      ),
-                                                                                    ),
-                                                                                  ],
+                                                                  : Padding(
+                                                                      padding: const EdgeInsets
+                                                                          .only(
+                                                                          right:
+                                                                              16,
+                                                                          left:
+                                                                              16),
+                                                                      child: ListView
+                                                                          .builder(
+                                                                        shrinkWrap:
+                                                                            true,
+                                                                        padding:
+                                                                            EdgeInsets.zero,
+                                                                        itemCount:
+                                                                            warnings.length,
+                                                                        itemBuilder:
+                                                                            (context,
+                                                                                index) {
+                                                                          if (warnings[index]
+                                                                              .checkedOff) {
+                                                                            return SizedBox();
+                                                                          }
+                                                                          return Container(
+                                                                            margin:
+                                                                                const EdgeInsets.symmetric(vertical: 6),
+                                                                            padding:
+                                                                                const EdgeInsets.all(12),
+                                                                            decoration:
+                                                                                BoxDecoration(
+                                                                              color: Colors.grey.shade100,
+                                                                              borderRadius: BorderRadius.circular(12),
+                                                                              border: Border.all(color: Colors.black12),
+                                                                            ),
+                                                                            child:
+                                                                                Row(
+                                                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                                                              mainAxisAlignment: MainAxisAlignment.start,
+                                                                              children: [
+                                                                                GestureDetector(
+                                                                                  onTap: () {
+                                                                                    warnings[index].checkedOff = true;
+                                                                                    setStateWarnings(() {});
+                                                                                    setstateInner(() {});
+                                                                                  },
+                                                                                  child: const Icon(Icons.check, color: Colors.black),
                                                                                 ),
-                                                                              ),
-                                                                              GestureDetector(
-                                                                                onTap: () {
-                                                                                  videoPlayerController!.seekTo(warnings[index].duration);
-                                                                                  Navigator.of(context).pop();
-                                                                                },
-                                                                                child: const Icon(Icons.arrow_forward_ios, size: 16),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        );
-                                                                      },
+                                                                                const SizedBox(width: 12),
+                                                                                Expanded(
+                                                                                  child: Column(
+                                                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                    children: [
+                                                                                      Text(
+                                                                                        '${warnings[index].valType.toString().toUpperCase().replaceAll("VALTYPE.", "")}: ${warnings[index].recvValue} / ${warnings[index].limit}',
+                                                                                        style: TextStyle(
+                                                                                          fontWeight: FontWeight.bold,
+                                                                                          fontSize: 16,
+                                                                                        ),
+                                                                                      ),
+                                                                                      SizedBox(height: 4),
+                                                                                      Text(
+                                                                                        "${warnings[index].message}\n⏰ ${formatDuration(warnings[index].duration)}",
+                                                                                        style: TextStyle(
+                                                                                          fontSize: 13,
+                                                                                          color: Colors.black87,
+                                                                                        ),
+                                                                                      ),
+                                                                                    ],
+                                                                                  ),
+                                                                                ),
+                                                                                GestureDetector(
+                                                                                  onTap: () {
+                                                                                    videoPlayerController!.seekTo(warnings[index].duration);
+                                                                                    Navigator.of(context).pop();
+                                                                                  },
+                                                                                  child: const Icon(Icons.arrow_forward_ios, size: 16),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          );
+                                                                        },
+                                                                      ),
                                                                     ),
                                                         ),
                                                       ],
@@ -958,6 +1068,22 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                               ),
                                               Positioned(
                                                 top: -16,
+                                                left: -20,
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          minWidth: 24,
+                                                          minHeight: 24),
+                                                ),
+                                              ),
+                                              Positioned(
+                                                top: -17,
                                                 left: -16,
                                                 child: Container(
                                                   padding:
@@ -980,7 +1106,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen> {
                                                           .toString(),
                                                       style: const TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: 12,
+                                                        fontSize: 14,
                                                         fontWeight:
                                                             FontWeight.bold,
                                                       ),

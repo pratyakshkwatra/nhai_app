@@ -42,6 +42,11 @@ dependencies:
   graphic: ^2.6.0
   csv: ^6.0.0
   animated_custom_dropdown: ^3.1.1
+  rounded_expansion_tile: ^0.0.13
+  flutter_rating_bar: ^4.0.1
+  geolocator: ^14.0.2
+  shimmer_animation: ^2.2.2
+  syncfusion_flutter_pdf: ^30.1.39
 
 dev_dependencies:
   flutter_test:
