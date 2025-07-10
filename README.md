@@ -62,11 +62,11 @@ Ensure that:
 ## 🌐 Screenshots
 
 ![home](assets/screenshots/home.jpg)
-![home_share_message](assets/screenshots/home_share_message.jpg)
 ![survey](assets/screenshots/survey.jpg)
 ![graph](assets/screenshots/graph.jpg)
 ![warnings](assets/screenshots/warnings.jpg)
 ![warnings_modal](assets/screenshots/warnings_modal.jpg)
+![home_share_message](assets/screenshots/home_share_message.jpg)
 ![warnings_share_message](assets/screenshots/warnings_share_message.jpg)
 
 ---
