@@ -89,4 +89,4 @@ MIT License.
 
 ---
 
-Built with ❤️ for Indian Roads by Pratyaksh Kwatra & Team.
+Built with ❤️ for Indian Roads by Pratyaksh Kwatra & Aarav Rai.
