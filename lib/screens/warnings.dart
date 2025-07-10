@@ -332,35 +332,63 @@ class _WarningsPageState extends State<WarningsPage> {
                           ),
                         );
 
-                        final byteData =
-                            await rootBundle.load(widget.videoPath);
-                        final tempDir = await getTemporaryDirectory();
-                        final filePath = '${tempDir.path}/temp_video.mp4';
+                        try {
+                          final byteData =
+                              await rootBundle.load(widget.videoPath);
+                          final tempDir = await getTemporaryDirectory();
+                          final filePath = '${tempDir.path}/temp_video.mp4';
 
-                        final file = File(filePath);
-                        await file.writeAsBytes(byteData.buffer.asUint8List());
+                          final file = File(filePath);
+                          await file
+                              .writeAsBytes(byteData.buffer.asUint8List());
 
-                        final videoTrimmer = VideoTrimmer();
-                        await videoTrimmer.loadVideo(filePath);
+                          final videoTrimmer = VideoTrimmer();
+                          await videoTrimmer.loadVideo(filePath);
 
-                        final trimmedPath = await videoTrimmer.trimVideo(
-                          startTimeMs: warning.duration.inMilliseconds - 5000,
-                          endTimeMs: warning.duration.inMilliseconds + 5000,
-                          includeAudio: true,
-                        );
+                          final trimmedPath = await videoTrimmer.trimVideo(
+                            startTimeMs: warning.duration.inMilliseconds - 5000,
+                            endTimeMs: warning.duration.inMilliseconds + 5000,
+                            includeAudio: true,
+                          );
 
-                        SharePlus.instance.share(
-                          ShareParams(
-                            text:
-                                "‼️ *WARNING* ‼️\n*Survey*: ${widget.surveyName}\n\nThe warning was found in the value type ${warning.valType.toString().split(".").last.toUpperCase()}.\n*Received Value*: ${warning.recvValue}\n*Prescribed Limit*: ${warning.limit}\n\nPlease find attached a video clip covering 5 seconds before and after the warning\n*Link*: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.latitude},${warning.cordinates.longitude}",
-                            files: [
-                              XFile(
-                                trimmedPath!,
-                              ),
-                            ],
-                          ),
-                        );
-                        await videoTrimmer.clearCache();
+                          final hasVideo = trimmedPath != null &&
+                              await File(trimmedPath).exists();
+
+                          final message = '''
+‼️ *WARNING* ‼️
+*Survey*: ${widget.surveyName}
+
+${warning.valType.toString().split(".").last.toUpperCase()} exceeded limit.
+Received: ${warning.recvValue} | Limit: ${warning.limit}
+
+Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.latitude},${warning.cordinates.longitude}
+${hasVideo ? "\n🎥 Attached: Video clip showing 5s before & after" : ""}
+''';
+
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              text: message,
+                              files: hasVideo ? [XFile(trimmedPath)] : [],
+                            ),
+                          );
+
+                          await videoTrimmer.clearCache();
+                        } catch (e) {
+                          debugPrint("Share failed: $e");
+
+                          final fallbackMessage = '''
+‼️ *WARNING* ‼️
+*Survey*: ${widget.surveyName}
+
+${warning.valType.toString().split(".").last.toUpperCase()} exceeded limit.
+Received: ${warning.recvValue} | Limit: ${warning.limit}
+
+Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.latitude},${warning.cordinates.longitude}
+''';
+
+                          await SharePlus.instance
+                              .share(ShareParams(text: fallbackMessage));
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
