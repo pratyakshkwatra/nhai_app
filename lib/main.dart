@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:nhai_app/screens/home.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FMTCObjectBoxBackend().initialise(
+    maxDatabaseSize: 100000000,
+  );
+  await FMTCStore('mapStore').manage.create();
   runApp(const MyApp());
 }
 

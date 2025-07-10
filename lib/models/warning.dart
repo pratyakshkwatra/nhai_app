@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 class Warning {
   final ValType valType;
   final double limit;
@@ -5,11 +7,12 @@ class Warning {
   final String message;
   final Duration duration;
   bool checkedOff;
+  final LatLng cordinates;
 
   Warning(this.valType, this.limit, this.recvValue, this.message, this.duration,
-      this.checkedOff);
+      this.checkedOff, this.cordinates);
 
-      @override
+  @override
   bool operator ==(Object other) {
     return other is Warning &&
         other.valType == valType &&

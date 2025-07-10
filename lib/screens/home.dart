@@ -39,11 +39,6 @@ List<Survey> surveys = [
 class _HomeScreenState extends State<HomeScreen> {
   String selectedRoadway = roadWays[0];
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Widget dropDownMenu(BuildContext context, String header, List<String> items,
       String selectedItem, Function(dynamic) onChanged) {
     return Column(
@@ -52,13 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
         Padding(
           padding:
               EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.05),
-          child: Text(
-            header,
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          child: Text(header,
+              style: GoogleFonts.poppins(
+                  fontSize: 22, fontWeight: FontWeight.w600)),
         ),
         const SizedBox(height: 8),
         Row(
@@ -87,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<List<List<dynamic>>> loadCsvData(String csvPath) async {
     final rawData = await rootBundle.loadString(csvPath);
-
     final listData = const CsvToListConverter().convert(rawData, eol: '\n');
     listData.removeAt(0);
     return listData;
@@ -95,54 +85,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   double calculateTotalDistance(List<List<double>> points) {
     double totalDistance = 0;
-
     for (int i = 0; i < points.length - 1; i++) {
       final start = points[i];
       final end = points[i + 1];
-
-      final distance = Geolocator.distanceBetween(
-        start[0],
-        start[1],
-        end[0],
-        end[1],
-      );
-
-      totalDistance += distance;
+      totalDistance +=
+          Geolocator.distanceBetween(start[0], start[1], end[0], end[1]);
     }
-
     return totalDistance / 1000;
   }
 
   Future<Map<String, dynamic>> loadAndProcessCSV(String csvPath) async {
     try {
-      List<List<dynamic>> csvData = await loadCsvData(csvPath);
-
+      final csvData = await loadCsvData(csvPath);
       if (csvData.isEmpty) {
-        return {
-          "distance": 0.0,
-          "road_health": 0.0,
-        };
+        return {"distance": 0.0, "road_health": 0.0};
       }
 
       List<List<double>> latLong = [];
       int totalValues = csvData.length;
       int totalWarnings = 0;
-
       int roughnessWarnings = 0;
       int rutWarnings = 0;
       int crackWarnings = 0;
       int ravellingWarnings = 0;
 
-      for (List item in csvData) {
+      for (var item in csvData) {
         if (item.length > 14) {
           final lat = double.tryParse(item[13].toString());
           final lng = double.tryParse(item[14].toString());
-
-          if (lat != null && lng != null) {
-            latLong.add([lat, lng]);
-          }
+          if (lat != null && lng != null) latLong.add([lat, lng]);
         }
-
         if (item.length > 12) {
           final val5 = _tryNum(item[5]);
           final val6 = _tryNum(item[6]);
@@ -154,27 +126,17 @@ class _HomeScreenState extends State<HomeScreen> {
           final val12 = _tryNum(item[12]);
 
           if (val9 > val5 || val10 > val6 || val11 > val7 || val12 > val8) {
-            totalWarnings += 1;
+            totalWarnings++;
           }
-
-          if (val9 > val5) {
-            roughnessWarnings += 1;
-          }
-          if (val10 > val6) {
-            rutWarnings += 1;
-          }
-          if (val11 > val7) {
-            crackWarnings += 1;
-          }
-          if (val12 > val7) {
-            ravellingWarnings += 1;
-          }
+          if (val9 > val5) roughnessWarnings++;
+          if (val10 > val6) rutWarnings++;
+          if (val11 > val7) crackWarnings++;
+          if (val12 > val8) ravellingWarnings++;
         }
       }
 
       final double distance =
           latLong.length >= 2 ? calculateTotalDistance(latLong) : 0.0;
-
       final double roadHealth = (totalValues > 0
               ? (totalValues - totalWarnings) / totalValues
               : 0.0) *
@@ -183,20 +145,20 @@ class _HomeScreenState extends State<HomeScreen> {
       return {
         "distance": distance,
         "road_health": roadHealth,
-        "roughness": double.parse((roughnessWarnings / totalValues).toString()),
-        "rut": double.parse((rutWarnings / totalValues).toString()),
-        "crack": double.parse((crackWarnings / totalValues).toString()),
-        "ravelling": double.parse((ravellingWarnings / totalValues).toString()),
+        "roughness": roughnessWarnings / totalValues,
+        "rut": rutWarnings / totalValues,
+        "crack": crackWarnings / totalValues,
+        "ravelling": ravellingWarnings / totalValues,
       };
     } catch (e) {
       return {
         "distance": 0.0,
         "road_health": 0.0,
         "error": e.toString(),
-        "roughness": 0,
-        "rut": 0,
-        "crack": 0,
-        "ravelling": 0,
+        "roughness": 0.0,
+        "rut": 0.0,
+        "crack": 0.0,
+        "ravelling": 0.0,
       };
     }
   }
@@ -207,17 +169,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          "$title:",
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        Text("$title:",
+            style:
+                GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
         SizedBox(
           width: MediaQuery.of(context).size.width * 0.5,
           child: ClipRRect(
-            borderRadius: BorderRadiusGeometry.circular(16),
+            borderRadius: BorderRadius.circular(16),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -227,14 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: Colors.grey.shade300,
                   minHeight: 16,
                 ),
-                Text(
-                  "${(value * 100).toStringAsFixed(2)}%",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
+                Text("${(value * 100).toStringAsFixed(2)}%",
+                    style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w300)),
               ],
             ),
           ),
@@ -256,38 +211,27 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.redAccent,
-        title: Text(
-          "NHAI Inspection App",
-          style: GoogleFonts.poppins(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: Text("NHAI VISION",
+            style:
+                GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w600)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: BouncingScrollPhysics(),
           child: Column(
             children: [
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.025,
-              ),
-              dropDownMenu(context, "Select Highway: ", roadWays, roadWays[0],
+              SizedBox(height: MediaQuery.of(context).size.height * 0.025),
+              dropDownMenu(
+                  context, "Select Highway: ", roadWays, selectedRoadway,
                   (dynamic value) {
-                setState(() {
-                  selectedRoadway = value;
-                });
+                setState(() => selectedRoadway = value);
               }),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Builder(builder: (context) {
-                  List<Survey> surveysValid = surveys.where((survey) {
-                    if (survey.roadway == selectedRoadway) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  }).toList();
+                  List<Survey> surveysValid = surveys
+                      .where((s) => s.roadway == selectedRoadway)
+                      .toList();
 
                   return ListView.builder(
                     shrinkWrap: true,
@@ -295,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemCount: surveysValid.length,
                     itemBuilder: (context, index) {
                       Survey survey = surveysValid[index];
-
                       return Padding(
                         padding:
                             const EdgeInsets.only(top: 16, left: 8, right: 8),
@@ -303,355 +246,224 @@ class _HomeScreenState extends State<HomeScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16)),
                           child: RoundedExpansionTile(
-                            trailing: Icon(
-                              Icons.arrow_downward,
-                            ),
+                            trailing: Icon(Icons.arrow_downward),
                             tileColor: Colors.grey.shade300,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
                             title: Text(
-                              "Survey: ${survey.roadway} - ${survey.lane}",
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                              ),
-                            ),
+                                "Survey: ${survey.roadway} - ${survey.lane}",
+                                style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w600, fontSize: 20)),
                             children: [
-                              SizedBox(
-                                height: 8,
-                              ),
+                              SizedBox(height: 8),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 8),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      "Date: ${survey.date}",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 8,
-                                    ),
+                                    Text("Date: ${survey.date}",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600)),
+                                    SizedBox(height: 8),
                                     FutureBuilder(
-                                        future:
-                                            loadAndProcessCSV(survey.csvPath),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.hasData) {
-                                            double distance =
-                                                snapshot.data!["distance"];
-                                            double roadHealth =
-                                                snapshot.data!["road_health"];
-                                            double roughness =
-                                                snapshot.data!["roughness"];
-                                            double rut = snapshot.data!["rut"];
-                                            double crack =
-                                                snapshot.data!["crack"];
-                                            double ravelling =
-                                                snapshot.data!["ravelling"];
+                                      future: loadAndProcessCSV(survey.csvPath),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          final data = snapshot.data!;
+                                          final distance = data["distance"];
+                                          final roadHealth =
+                                              data["road_health"];
+                                          final roughness = data["roughness"];
+                                          final rut = data["rut"];
+                                          final crack = data["crack"];
+                                          final ravelling = data["ravelling"];
 
-                                            return SizedBox(
-                                              width: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  0.9,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    "Distance Covered: ${distance.toStringAsFixed(2)}KM",
-                                                    style: GoogleFonts.poppins(
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                  "Distance Covered: ${distance.toStringAsFixed(2)}KM",
+                                                  style: GoogleFonts.poppins(
                                                       fontSize: 16,
                                                       fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: 8,
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      Text(
-                                                        "Road Health:",
-                                                        style:
-                                                            GoogleFonts.poppins(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        width: 8,
-                                                      ),
-                                                      RatingBar.builder(
-                                                        initialRating:
-                                                            roadHealth,
-                                                        minRating: 0,
-                                                        direction:
-                                                            Axis.horizontal,
-                                                        allowHalfRating: true,
-                                                        itemCount: 5,
-                                                        itemSize: 18,
-                                                        itemPadding: EdgeInsets
-                                                            .symmetric(
-                                                          horizontal: 1.0,
-                                                        ),
-                                                        itemBuilder:
-                                                            (context, _) =>
-                                                                Icon(
-                                                          Icons.favorite,
-                                                          color:
-                                                              Colors.redAccent,
-                                                          size: 8,
-                                                        ),
-                                                        ignoreGestures: true,
-                                                        onRatingUpdate:
-                                                            (rating) {},
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  SizedBox(
-                                                    height: 8,
-                                                  ),
-                                                  Divider(),
-                                                  SizedBox(
-                                                    height: 8,
-                                                  ),
-                                                  SizedBox(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.85,
-                                                    child: progressBarWithTitle(
-                                                      "Roughness",
-                                                      roughness,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.85,
-                                                    child: progressBarWithTitle(
-                                                      "Rut",
-                                                      rut,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.85,
-                                                    child: progressBarWithTitle(
-                                                      "Crack",
-                                                      crack,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                                .size
-                                                                .width *
-                                                            0.85,
-                                                    child: progressBarWithTitle(
-                                                      "Ravelling",
-                                                      ravelling,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    height: 8,
-                                                  ),
-                                                  SizedBox(
-                                                    height: 8,
-                                                  ),
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
-                                                    children: [
-                                                      SizedBox(
-                                                        width: MediaQuery.of(
-                                                                    context)
-                                                                .size
-                                                                .width *
-                                                            0.4,
-                                                        child: ElevatedButton(
-                                                          onPressed: () {
-                                                            shareData(
-                                                              survey.date,
-                                                              distance,
-                                                              roadHealth,
-                                                              roughness,
-                                                              rut,
-                                                              crack,
-                                                              ravelling,
-                                                              survey,
-                                                            );
-                                                          },
-                                                          style: ElevatedButton
-                                                              .styleFrom(
-                                                            backgroundColor:
-                                                                Colors
-                                                                    .redAccent,
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        18,
-                                                                    vertical:
-                                                                        4),
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            elevation: 4,
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceEvenly,
-                                                            children: [
-                                                              Icon(
-                                                                Icons.ios_share,
-                                                                size: 22,
-                                                                color: Colors
-                                                                    .black,
-                                                              ),
-                                                              Text(
-                                                                'SHARE',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .black,
-                                                                  fontSize: 20,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      SizedBox(
-                                                        width: MediaQuery.of(
-                                                                    context)
-                                                                .size
-                                                                .width *
-                                                            0.4,
-                                                        child: ElevatedButton(
-                                                          onPressed: () {
-                                                            Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) {
-                                                              return SurveyVehicleDataScreen(
-                                                                videoPath:
-                                                                    'assets/${survey.lane.split(" ").last}_1080p.mp4',
-                                                                csvPath:
-                                                                    'assets/${survey.lane.split(" ").last}.csv',
-                                                                lane:
-                                                                    survey.lane,
-                                                              );
-                                                            }));
-                                                          },
-                                                          style: ElevatedButton
-                                                              .styleFrom(
-                                                            backgroundColor:
-                                                                Colors.black,
-                                                            foregroundColor:
-                                                                Colors.white,
-                                                            padding:
-                                                                const EdgeInsets
-                                                                    .symmetric(
-                                                                    horizontal:
-                                                                        18,
-                                                                    vertical:
-                                                                        4),
-                                                            shape:
-                                                                RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
-                                                            ),
-                                                            elevation: 4,
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceEvenly,
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .find_in_page,
-                                                                size: 22,
-                                                                color: Colors
-                                                                    .white,
-                                                              ),
-                                                              Text(
-                                                                'INSPECT',
-                                                                style:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 18,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
+                                                          FontWeight.w600)),
+                                              SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Text("Road Health:",
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600)),
+                                                  SizedBox(width: 8),
+                                                  RatingBarIndicator(
+                                                    rating: roadHealth,
+                                                    itemBuilder: (context, _) =>
+                                                        Icon(Icons.favorite,
+                                                            color: Colors
+                                                                .redAccent),
+                                                    itemCount: 5,
+                                                    itemSize: 18,
                                                   ),
                                                 ],
                                               ),
-                                            );
-                                          } else {
-                                            return ClipRRect(
-                                              borderRadius:
-                                                  BorderRadiusGeometry.circular(
-                                                      12),
-                                              child: Shimmer(
-                                                duration:
-                                                    Duration(milliseconds: 200),
-                                                interval:
-                                                    Duration(milliseconds: 100),
-                                                color: Colors.grey.shade400,
-                                                colorOpacity: 0.9,
-                                                enabled: true,
-                                                direction:
-                                                    ShimmerDirection.fromLTRB(),
-                                                child: Container(
-                                                  height: 128,
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.9,
-                                                  color: Colors.grey.shade300,
-                                                ),
+                                              SizedBox(height: 8),
+                                              Divider(),
+                                              SizedBox(height: 8),
+                                              progressBarWithTitle(
+                                                  "Roughness", roughness),
+                                              progressBarWithTitle("Rut", rut),
+                                              progressBarWithTitle(
+                                                  "Crack", crack),
+                                              progressBarWithTitle(
+                                                  "Ravelling", ravelling),
+                                              SizedBox(height: 8),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      shareData(
+                                                          survey.date,
+                                                          distance,
+                                                          roadHealth,
+                                                          roughness,
+                                                          rut,
+                                                          crack,
+                                                          ravelling,
+                                                          survey);
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.redAccent,
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 18,
+                                                              vertical: 4),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
+                                                      elevation: 4,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceEvenly,
+                                                      children: [
+                                                        Icon(Icons.ios_share,
+                                                            size: 22,
+                                                            color:
+                                                                Colors.black),
+                                                        Text('SHARE',
+                                                            style: GoogleFonts.poppins(
+                                                                color: Colors
+                                                                    .black,
+                                                                fontSize: 20,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () {
+                                                      Navigator.push(context,
+                                                          MaterialPageRoute(
+                                                              builder:
+                                                                  (context) {
+                                                        return SurveyVehicleDataScreen(
+                                                          videoPath:
+                                                              survey.videoPath,
+                                                          csvPath:
+                                                              survey.csvPath,
+                                                          lane: survey.lane,
+                                                          roadWay:
+                                                              survey.roadway,
+                                                        );
+                                                      }));
+                                                    },
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          Colors.black,
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 18,
+                                                              vertical: 4),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          12)),
+                                                      elevation: 4,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceEvenly,
+                                                      children: [
+                                                        Icon(Icons.find_in_page,
+                                                            size: 22,
+                                                            color:
+                                                                Colors.white),
+                                                        Text('INSPECT',
+                                                            style: GoogleFonts.poppins(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 18,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            );
-                                          }
-                                        }),
+                                            ],
+                                          );
+                                        } else {
+                                          return ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: Shimmer(
+                                              duration:
+                                                  Duration(milliseconds: 200),
+                                              interval:
+                                                  Duration(milliseconds: 100),
+                                              color: Colors.grey.shade400,
+                                              colorOpacity: 0.9,
+                                              enabled: true,
+                                              direction:
+                                                  ShimmerDirection.fromLTRB(),
+                                              child: Container(
+                                                height: 128,
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.9,
+                                                color: Colors.grey.shade300,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
                                   ],
                                 ),
                               ),
