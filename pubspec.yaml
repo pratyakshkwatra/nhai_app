@@ -84,6 +84,9 @@ flutter:
     - assets/R2_1080p.mp4
     - assets/map_car.png
     - assets/map_pin.png
+    - assets/images/road.jpg
+    - assets/images/L2.jpg
+    - assets/images/R2.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

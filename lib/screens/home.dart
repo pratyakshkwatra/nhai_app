@@ -26,6 +26,7 @@ List<Survey> surveys = [
     lane: "L2",
     csvPath: "assets/L2.csv",
     videoPath: "assets/L2_1080p.mp4",
+    imagePath: "",
   ),
   Survey(
     roadway: "NH148N",
@@ -33,6 +34,7 @@ List<Survey> surveys = [
     lane: "R2",
     csvPath: "assets/R2.csv",
     videoPath: "assets/R2_1080p.mp4",
+    imagePath: "",
   ),
 ];
 
