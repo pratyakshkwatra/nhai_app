@@ -61,7 +61,7 @@ Ensure that:
 
 ## 🌐 Screenshots
 
-![home](assets/screenshots/home.jpg)
+![home](assets/screenshots/home.jpeg)
 ![survey](assets/screenshots/survey.jpg)
 ![graph](assets/screenshots/graph.jpg)
 ![warnings](assets/screenshots/warnings.jpg)
