@@ -61,13 +61,13 @@ Ensure that:
 
 ## 🌐 Screenshots
 
-![home](assets/screens/home.jpg)
-![home_share_message](assets/screens/home_share_message.jpg)
-![survey](assets/screens/survey.jpg)
-![graph](assets/screens/graph.jpg)
-![warnings](assets/screens/warnings.jpg)
-![warnings_modal](assets/screens/warnings_modal.jpg)
-![warnings_share_message](assets/screens/warnings_share_message.jpg)
+![home](assets/screenshots/home.jpg)
+![home_share_message](assets/screenshots/home_share_message.jpg)
+![survey](assets/screenshots/survey.jpg)
+![graph](assets/screenshots/graph.jpg)
+![warnings](assets/screenshots/warnings.jpg)
+![warnings_modal](assets/screenshots/warnings_modal.jpg)
+![warnings_share_message](assets/screenshots/warnings_share_message.jpg)
 
 ---
 
