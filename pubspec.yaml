@@ -52,6 +52,14 @@ dependencies:
   flutter_native_video_trimmer: ^1.1.9
   flutter_map_tile_caching: ^10.1.1
   http: ^1.4.0
+  flutter_secure_storage: ^9.2.4
+  dio: ^5.8.0+1
+  water_drop_nav_bar: ^2.2.2
+  image_picker: ^1.1.2
+  http_parser: ^4.1.2
+  path: ^1.9.1
+  recase: ^4.1.0
+  auto_size_text: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -84,7 +92,6 @@ flutter:
     - assets/R2_1080p.mp4
     - assets/map_car.png
     - assets/map_pin.png
-    - assets/images/road.jpg
     - assets/images/L2.jpg
     - assets/images/R2.jpg
 

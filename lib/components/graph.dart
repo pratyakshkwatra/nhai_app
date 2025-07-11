@@ -39,7 +39,6 @@ class CustomGraph extends StatelessWidget {
             bottom: 12,
           ),
           child: LineChart(
-
             LineChartData(
               extraLinesData: ExtraLinesData(
                 horizontalLines: [
@@ -136,7 +135,6 @@ class CustomGraph extends StatelessWidget {
                 rightTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: false,
-                    
                   ),
                 ),
                 leftTitles: AxisTitles(
@@ -149,7 +147,6 @@ class CustomGraph extends StatelessWidget {
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 8,
-                          
                           color: Colors.black,
                         ),
                       );

@@ -652,8 +652,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                     ),
                                     curve: Curves.easeInSine,
                                   );
-                                } catch (_) {
-                                }
+                                } catch (_) {}
                               });
                             });
                           }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
-import 'package:nhai_app/screens/home.dart';
-import 'package:nhai_app/screens/new_home.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:nhai_app/api/auth_api.dart';
+import 'package:nhai_app/screens/loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,9 @@ Future<void> main() async {
   await FMTCStore('mapStore').manage.create();
   runApp(const MyApp());
 }
+
+AuthAPI authAPI = AuthAPI();
+FlutterSecureStorage secureStorage = FlutterSecureStorage();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -24,7 +28,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         useMaterial3: true,
       ),
-      home: NewHomeScreen(),
+      home: LoadingScreen(
+        authAPI: authAPI,
+        secureStorage: secureStorage,
+      ),
     );
   }
 }

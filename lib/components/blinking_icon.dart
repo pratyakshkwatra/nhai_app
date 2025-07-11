@@ -20,7 +20,8 @@ class _BlinkingIconState extends State<BlinkingIcon>
       duration: const Duration(milliseconds: 200),
     );
 
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
+    _opacityAnimation =
+        Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
 
     _startBlinkLoop();
   }
