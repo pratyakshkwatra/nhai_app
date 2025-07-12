@@ -1,11 +1,13 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:nhai_app/api/models/lane.dart';
+import 'package:nhai_app/api/models/roadway.dart';
 import 'package:nhai_app/api/models/user.dart';
-import 'package:nhai_app/models/survey.dart';
+import 'package:nhai_app/api/officer_api.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:nhai_app/screens/auth/login.dart';
 import 'package:nhai_app/screens/inspection_officer/roadways.dart';
@@ -22,33 +24,20 @@ class InspectionHome extends StatefulWidget {
   State<InspectionHome> createState() => _InspectionHomeState();
 }
 
-const List<String> roadWays = [];
-List<Survey> surveys = [
-  Survey(
-    roadway: "NH148N",
-    date: "10/03/2025",
-    lane: "L2",
-    csvPath: "assets/L2.csv",
-    videoPath: "assets/L2_1080p.mp4",
-    imagePath: 'assets/images/L2.jpg',
-  ),
-  Survey(
-    roadway: "NH148N",
-    date: "10/03/2025",
-    lane: "R2",
-    csvPath: "assets/R2.csv",
-    videoPath: "assets/R2_1080p.mp4",
-    imagePath: 'assets/images/R2.jpg',
-  ),
-];
-
 class _InspectionHomeState extends State<InspectionHome> {
-  int? viewIndex;
+  List<Roadway> roadWays = [];
 
-  Future<List<List<dynamic>>> loadCsvData(String csvPath) async {
-    final rawData = await rootBundle.loadString(csvPath);
-    final listData = const CsvToListConverter().convert(rawData, eol: '\n');
+  Future<List<List<dynamic>>> loadCsvData(String csvUrl) async {
+    final response = await http.get(Uri.parse(csvUrl));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load CSV from $csvUrl');
+    }
+
+    final csvRaw = response.body;
+    final listData = const CsvToListConverter().convert(csvRaw, eol: '\n');
     listData.removeAt(0);
+
     return listData;
   }
 
@@ -133,8 +122,22 @@ class _InspectionHomeState extends State<InspectionHome> {
   }
 
   Future<Map<String, dynamic>> loadAndProcessMultipleCSVs(
-      List<String> csvPathsRec) async {
-    final List<String> csvPaths = csvPathsRec.toSet().toList();
+      List<Roadway> recRoadWays) async {
+    final List<String> csvPaths = [];
+    List<Roadway> roadWays = await OfficerApi().getMyRoadways();
+
+    for (Roadway roadWay in roadWays) {
+      if (recRoadWays.any((rw) => rw.id == roadWay.id) || recRoadWays.isEmpty) {
+        List<Lane> lanes = await OfficerApi().getLanes(roadWay.id);
+        for (Lane lane in lanes) {
+          if (lane.data != null) {
+            if (lane.data!.xlsxPath != null) {
+              csvPaths.add(lane.data!.xlsxPath!);
+            }
+          }
+        }
+      }
+    }
 
     double totalDistance = 0.0;
     double totalRoadHealth = 0.0;
@@ -146,7 +149,9 @@ class _InspectionHomeState extends State<InspectionHome> {
 
     for (String path in csvPaths) {
       final result = await loadAndProcessCSV(path);
-      if (result.containsKey("error")) continue;
+      if (result.containsKey("error")) {
+        continue;
+      }
 
       totalDistance += result["distance"];
       totalRoadHealth += result["road_health"];
@@ -272,20 +277,14 @@ class _InspectionHomeState extends State<InspectionHome> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: FutureBuilder(
-                    future: viewIndex != null
-                        ? loadAndProcessMultipleCSVs(
-                            [surveys[viewIndex!].csvPath],
-                          )
-                        : loadAndProcessMultipleCSVs(
-                            surveys.map((s) => s.csvPath).toList(),
-                          ),
+                    future: loadAndProcessMultipleCSVs(
+                      roadWays,
+                    ),
                     builder: (context, asyncSnapshotMain) {
                       if (!asyncSnapshotMain.hasData) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: Shimmer(
-                            duration: const Duration(milliseconds: 200),
-                            interval: const Duration(milliseconds: 100),
                             color: Colors.white,
                             colorOpacity: 0.6,
                             enabled: true,
@@ -293,7 +292,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                             child: Container(
                               height: 140,
                               width: double.infinity,
-                              color: Colors.grey.shade300,
+                              color: Colors.red.shade300,
                             ),
                           ),
                         );
@@ -337,7 +336,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       AutoSizeText(
-                                        viewIndex != null
+                                        roadWays.isNotEmpty
                                             ? "Lane Length: ${animatedDistance.toStringAsFixed(2)} KM"
                                             : "Total Distance: ${animatedDistance.toStringAsFixed(2)} KM",
                                         style: GoogleFonts.poppins(
@@ -350,7 +349,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                                       Row(
                                         children: [
                                           AutoSizeText(
-                                            viewIndex != null
+                                            roadWays.isNotEmpty
                                                 ? "Lane Health:"
                                                 : "Highway Health:",
                                             style: GoogleFonts.poppins(
@@ -547,9 +546,9 @@ class _InspectionHomeState extends State<InspectionHome> {
                         child: RoadwaysOfficer(
                           authService: widget.authService,
                           user: widget.user,
-                          onView: (int? index) {
+                          onView: (List<Roadway> recRoadWays) {
                             setState(() {
-                              viewIndex = index;
+                              roadWays = recRoadWays;
                             });
                           },
                         ),

@@ -9,7 +9,6 @@ import 'package:flutter_native_video_trimmer/flutter_native_video_trimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nhai_app/models/warning.dart';
-import 'package:nhai_app/screens/survey_vehicle_data_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
@@ -201,83 +200,98 @@ class _WarningsPageState extends State<WarningsPage> {
     return urls.last;
   }
 
-  showCustomModalBottomSheet(Warning warning, TileProvider tileProvider) {
+  void showCustomModalBottomSheet(Warning warning, TileProvider tileProvider) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height,
-          width: MediaQuery.of(context).size.width,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(12),
-              topRight: Radius.circular(12),
-            ),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Warning",
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 24,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "⚠️ Warning Details",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      color: Colors.black,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 16),
               Container(
-                width: MediaQuery.of(context).size.width,
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade100,
+                  color: Colors.redAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Type: ${warning.valType.toString().split(".").last.toUpperCase()} - ${warning.recvValue}/${warning.limit}",
+                      "Type: ${warning.valType.toString().split(".").last.toUpperCase()}",
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.w600,
                         fontSize: 18,
+                        color: Colors.black,
                       ),
                     ),
-                    SizedBox(
-                      height: 4,
+                    const SizedBox(height: 6),
+                    Text(
+                      "Received: ${warning.recvValue} / Limit: ${warning.limit}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
                     ),
+                    const SizedBox(height: 6),
                     Text(
                       "Time: ${formatDuration(warning.duration)}",
                       style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
                         fontSize: 16,
+                        color: Colors.black87,
                       ),
                     ),
-                    SizedBox(
-                      height: 4,
-                    ),
+                    const SizedBox(height: 6),
                     Text(
                       warning.message,
                       style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w300,
-                        fontSize: 16,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black54,
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.45,
-                    child: ElevatedButton(
+                  Expanded(
+                    child: ElevatedButton.icon(
                       onPressed: () {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           videoPlayerController!.seekTo(Duration(
@@ -287,47 +301,33 @@ class _WarningsPageState extends State<WarningsPage> {
                           showWarningPlayerDialog(context, playerWidget!);
                         });
                       },
+                      icon: const Icon(Icons.play_circle, color: Colors.white),
+                      label: Text(
+                        'Play Clip',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Icon(
-                            Icons.cut,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          Text(
-                            'Play Clip',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.45,
-                    child: ElevatedButton(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
                       onPressed: () async {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text("Processing Video Clip..."),
-                            duration: Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
+                            content: const Text("Processing Video Clip..."),
                             backgroundColor: Colors.redAccent,
+                            behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -337,7 +337,6 @@ class _WarningsPageState extends State<WarningsPage> {
                         try {
                           final tempDir = await getTemporaryDirectory();
                           final filePath = '${tempDir.path}/temp_video.mp4';
-
                           File file;
 
                           if (widget.videoPath.startsWith('http')) {
@@ -358,7 +357,6 @@ class _WarningsPageState extends State<WarningsPage> {
 
                           final videoTrimmer = VideoTrimmer();
                           await videoTrimmer.loadVideo(file.path);
-
                           final trimmedPath = await videoTrimmer.trimVideo(
                             startTimeMs: warning.duration.inMilliseconds - 5000,
                             endTimeMs: warning.duration.inMilliseconds + 5000,
@@ -381,16 +379,14 @@ ${hasVideo ? "\n🎥 Attached: Video clip showing 5s before & after" : ""}
 
                           await SharePlus.instance.share(
                             ShareParams(
-                              text: message,
-                              files: hasVideo ? [XFile(trimmedPath)] : [],
-                            ),
+                                text: message,
+                                files: hasVideo ? [XFile(trimmedPath)] : []),
                           );
 
                           await videoTrimmer.clearCache();
                         } catch (e) {
                           debugPrint("Share failed: $e");
-
-                          final fallbackMessage = '''
+                          final fallback = '''
 ‼️ *WARNING* ‼️
 *Survey*: ${widget.surveyName}
 
@@ -399,83 +395,65 @@ Received: ${warning.recvValue} | Limit: ${warning.limit}
 
 Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.latitude},${warning.cordinates.longitude}
 ''';
-
                           await SharePlus.instance
-                              .share(ShareParams(text: fallbackMessage));
+                              .share(ShareParams(text: fallback));
                         }
                       },
+                      icon: const Icon(Icons.share, color: Colors.black),
+                      label: Text(
+                        'Share',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Icon(
-                            Icons.share,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                          Text(
-                            'Share',
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(
-                height: 16,
-              ),
+              const SizedBox(height: 20),
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.25,
                 child: FutureBuilder(
-                    future: getWorkingTileUrl(satelliteFallbackUrls),
-                    builder: (context, asyncSnapshot) {
-                      if (!asyncSnapshot.hasData) {
-                        return Shimmer(
-                          color: Colors.white,
-                          colorOpacity: 0.75,
-                          child: Container(
-                            color: Colors.grey.shade300,
+                  future: getWorkingTileUrl(satelliteFallbackUrls),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Shimmer(
+                        color: Colors.white,
+                        colorOpacity: 0.75,
+                        child: Container(color: Colors.grey.shade300),
+                      );
+                    }
+
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: FlutterMap(
+                        mapController: MapController(),
+                        options: MapOptions(
+                          initialCenter: warning.cordinates,
+                          initialZoom: 18,
+                          minZoom: 3,
+                          maxZoom: 18,
+                          interactionOptions: const InteractionOptions(
+                            flags: InteractiveFlag.all,
                           ),
-                        );
-                      }
-                      return ClipRRect(
-                        borderRadius: BorderRadiusGeometry.circular(
-                          12,
                         ),
-                        child: FlutterMap(
-                          mapController: MapController(),
-                          options: MapOptions(
-                            initialCenter: warning.cordinates,
-                            minZoom: 3,
-                            maxZoom: 18,
-                            initialZoom: 18,
-                            interactionOptions: const InteractionOptions(
-                              flags: InteractiveFlag.all,
-                            ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: snapshot.data!,
+                            userAgentPackageName: 'com.example.nhai_app',
+                            subdomains: ["a", "b", "c"],
+                            tileProvider: tileProvider,
                           ),
-                          children: [
-                            TileLayer(
-                              urlTemplate: asyncSnapshot.data,
-                              userAgentPackageName: 'com.example.nhai_app',
-                              subdomains: ["a", "b", "c"],
-                              tileProvider: tileProvider,
-                            ),
-                            MarkerLayer(markers: [
+                          MarkerLayer(
+                            markers: [
                               Marker(
                                 point: warning.cordinates,
                                 width: 160,
@@ -486,11 +464,13 @@ Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.l
                                   width: 64,
                                 ),
                               ),
-                            ]),
-                          ],
-                        ),
-                      );
-                    }),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -512,140 +492,120 @@ Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.l
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: MediaQuery.of(context).size.height * 0.05,
-                width: MediaQuery.of(context).size.width,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Icon(
-                        Icons.arrow_back_ios,
-                        size: 24,
-                      ),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back_ios, size: 24),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Warnings",
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Warnings",
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              warnings.isEmpty
-                  ? SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.30,
-                      child: Center(
+              const SizedBox(height: 12),
+              Expanded(
+                child: widget.warnings.isEmpty
+                    ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
                               "No Data Available",
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 24,
+                                color: Colors.black,
                               ),
                             ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 18),
-                              child: Text(
-                                "Move forward in time using the play/pause button or the progress bar!",
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.w300,
-                                  fontSize: 14,
-                                ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Move forward in time using the play/pause button or the progress bar!",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w300,
+                                fontSize: 14,
+                                color: Colors.black54,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    )
-                  : SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.85,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      )
+                    : Column(
                         children: [
                           const SizedBox(height: 8),
                           Expanded(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(18),
                               child: FutureBuilder(
-                                  future:
-                                      getWorkingTileUrl(satelliteFallbackUrls),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData) {
-                                      return Shimmer(
-                                        color: Colors.white,
-                                        colorOpacity: 0.75,
-                                        child: Container(
-                                          color: Colors.grey.shade300,
-                                        ),
-                                      );
-                                    }
-                                    return FlutterMap(
-                                      mapController: _mapController,
-                                      options: MapOptions(
-                                        initialCenter: center,
-                                        minZoom: 3,
-                                        maxZoom: 18,
-                                        initialZoom: 13,
-                                        interactionOptions:
-                                            const InteractionOptions(
-                                          flags: InteractiveFlag.all,
-                                        ),
+                                future:
+                                    getWorkingTileUrl(satelliteFallbackUrls),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return Shimmer(
+                                      color: Colors.white,
+                                      colorOpacity: 0.75,
+                                      child: Container(
+                                        color: Colors.grey.shade300,
                                       ),
-                                      children: [
-                                        TileLayer(
-                                          urlTemplate: snapshot.data,
-                                          userAgentPackageName:
-                                              'com.example.nhai_app',
-                                          subdomains: ["a", "b", "c"],
-                                          tileProvider: tileProvider,
-                                        ),
-                                        MarkerLayer(
-                                          markers:
-                                              widget.warnings.map((warning) {
-                                            return Marker(
-                                              point: warning.cordinates,
-                                              width: 160,
-                                              height: 64,
-                                              child: GestureDetector(
-                                                onTap: () {
-                                                  showCustomModalBottomSheet(
-                                                      warning, tileProvider);
-                                                },
-                                                child: Image.asset(
-                                                  'assets/map_pin.png',
-                                                  height: 64,
-                                                  width: 64,
-                                                ),
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      ],
                                     );
-                                  }),
+                                  }
+                                  return FlutterMap(
+                                    mapController: _mapController,
+                                    options: MapOptions(
+                                      initialCenter: center,
+                                      minZoom: 3,
+                                      maxZoom: 18,
+                                      initialZoom: 13,
+                                      interactionOptions:
+                                          const InteractionOptions(
+                                        flags: InteractiveFlag.all,
+                                      ),
+                                    ),
+                                    children: [
+                                      TileLayer(
+                                        urlTemplate: snapshot.data!,
+                                        userAgentPackageName:
+                                            'com.example.nhai_app',
+                                        subdomains: ["a", "b", "c"],
+                                        tileProvider: tileProvider,
+                                      ),
+                                      MarkerLayer(
+                                        markers: widget.warnings.map((warning) {
+                                          return Marker(
+                                            point: warning.cordinates,
+                                            width: 160,
+                                            height: 64,
+                                            child: GestureDetector(
+                                              onTap: () =>
+                                                  showCustomModalBottomSheet(
+                                                      warning, tileProvider),
+                                              child: Image.asset(
+                                                'assets/map_pin.png',
+                                                height: 64,
+                                                width: 64,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
+              ),
             ],
           ),
         ),

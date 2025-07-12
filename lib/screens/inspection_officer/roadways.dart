@@ -16,7 +16,7 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 class RoadwaysOfficer extends StatefulWidget {
   final AuthService authService;
   final User user;
-  final Function onView;
+  final Function(List<Roadway>) onView;
 
   const RoadwaysOfficer(
       {super.key,
@@ -57,7 +57,7 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
     }
   }
 
-  Widget roadwayCard(Roadway roadway, int index) {
+  Widget roadwayCard(Roadway roadway, int index, List<Roadway> roadways) {
     final hasImage = roadway.imagePath != null && roadway.imagePath!.isNotEmpty;
     bool isExpanded = expandedTiles.contains(index);
 
@@ -100,7 +100,6 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
               height: MediaQuery.of(context).size.height * 0.16,
               width: double.infinity,
               decoration: BoxDecoration(
-                
                 color: hasImage ? Colors.black : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -197,10 +196,10 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                     setState(() {
                                       if (viewedIndex == index) {
                                         viewedIndex = null;
-                                        widget.onView(null);
+                                        widget.onView([]);
                                       } else {
                                         viewedIndex = index;
-                                        widget.onView(index);
+                                        widget.onView([roadway]);
                                       }
                                     });
                                   },
@@ -606,7 +605,7 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
 
                         return GestureDetector(
                           onTap: () {},
-                          child: roadwayCard(roadway, index),
+                          child: roadwayCard(roadway, index, roadways),
                         );
                       },
                     ),
