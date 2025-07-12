@@ -8,6 +8,7 @@ import 'package:nhai_app/screens/admin/home.dart';
 import 'package:nhai_app/screens/admin/officers/edit_officer.dart';
 import 'package:nhai_app/services/auth.dart';
 import 'package:recase/recase.dart';
+import 'package:intl/intl.dart';
 
 class UsersHome extends StatefulWidget {
   final AuthService authService;
@@ -162,7 +163,9 @@ class _UsersHomeState extends State<UsersHome> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Tap to edit officer profile",
+                                    "Created at: ${DateFormat('dd-MM-yyyy HH:mm').format(
+                                      inspectionOfficer.createdAt,
+                                    )}",
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w300,

@@ -6,7 +6,8 @@ import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/lane.dart';
 import 'package:nhai_app/api/models/roadway.dart';
 import 'package:nhai_app/api/models/user.dart';
-import 'package:nhai_app/screens/admin/home.dart';
+import 'package:nhai_app/screens/admin/roadways/add_lane.dart';
+import 'package:nhai_app/screens/admin/roadways/assign_officers.dart';
 import 'package:nhai_app/screens/admin/roadways/edit_roadway.dart';
 import 'package:nhai_app/services/auth.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
@@ -22,6 +23,8 @@ class RoadwaysHome extends StatefulWidget {
 }
 
 class _RoadwaysHomeState extends State<RoadwaysHome> {
+  Set<int> expandedTiles = {};
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +52,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
 
   Widget roadwayCard(Roadway roadway, int index) {
     final hasImage = roadway.imagePath != null && roadway.imagePath!.isNotEmpty;
-    bool isExpanded = false;
+    bool isExpanded = expandedTiles.contains(index);
 
     return StatefulBuilder(
       builder: (context, setStateInternal) {
@@ -65,7 +68,14 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
             backgroundColor: Colors.transparent,
             collapsedBackgroundColor: Colors.transparent,
             onExpansionChanged: (expanded) {
-              setState(() => isExpanded = expanded);
+              setState(() {
+                if (expanded) {
+                  expandedTiles.add(index);
+                } else {
+                  expandedTiles.remove(index);
+                }
+              });
+              setStateInternal(() {});
             },
             showTrailingIcon: false,
             trailing: AnimatedRotation(
@@ -194,6 +204,19 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                   setState(() {});
                                 }
                               } else if (value == 'manage_access') {
+                                final updated = await Navigator.push<bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AssignOfficersScreen(roadway: roadway),
+                                  ),
+                                );
+
+                                if (mounted && updated == true) {
+                                  await Future.delayed(
+                                      const Duration(milliseconds: 2000));
+                                  setState(() {});
+                                }
                               } else if (value == 'delete') {
                                 final confirm = await showDialog<bool>(
                                   context: context,
@@ -417,7 +440,23 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                     color: Colors.black,
                                   ),
                                 ),
-                                const Icon(Icons.add, color: Colors.black54),
+                                GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) {
+                                            return AddLane(
+                                              authService: widget.authService,
+                                              user: widget.user,
+                                              roadwayId: roadway.id,
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                    child: const Icon(Icons.add,
+                                        color: Colors.black54)),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -463,7 +502,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                                       .symmetric(
                                                       horizontal: 18),
                                                   child: Text(
-                                                    "Click the add (+) icon in the top right corner to add a new inspection officer account",
+                                                    "Click the add (+) icon in the top right corner to add a new lane",
                                                     textAlign: TextAlign.center,
                                                     style: GoogleFonts.poppins(
                                                       fontWeight:
@@ -475,49 +514,199 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                               ],
                                             )
                                           : ListView.builder(
-                                              itemCount: 4,
+                                              itemCount: lanes.length,
                                               itemBuilder: (context, index) {
-                                                final laneName =
-                                                    "Lane: L${index + 1}";
+                                                Lane lane = lanes[index];
                                                 return Container(
-                                                  margin: const EdgeInsets
-                                                      .symmetric(vertical: 6),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red.shade100
-                                                        .withValues(alpha: 0.6),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                  child: ListTile(
-                                                    title: Text(
-                                                      laneName,
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontSize: 18,
-                                                      ),
-                                                    ),
-                                                    trailing: const Icon(
-                                                      Icons
-                                                          .arrow_forward_ios_rounded,
-                                                      color: Colors.black54,
-                                                      size: 20,
-                                                    ),
-                                                    contentPadding:
-                                                        const EdgeInsets
-                                                            .symmetric(
-                                                            vertical: 3,
-                                                            horizontal: 16),
-                                                    shape:
-                                                        RoundedRectangleBorder(
+                                                    margin: const EdgeInsets
+                                                        .symmetric(vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.red.shade100
+                                                          .withValues(
+                                                              alpha: 0.6),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),
                                                     ),
-                                                  ),
-                                                );
+                                                    child: ListTile(
+                                                      title: Text(
+                                                        lane.laneId,
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          fontSize: 18,
+                                                        ),
+                                                      ),
+                                                      trailing: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          IconButton(
+                                                            icon: const Icon(
+                                                              Icons.delete,
+                                                              color: Colors
+                                                                  .black,
+                                                              size: 22,
+                                                            ),
+                                                            onPressed:
+                                                                () async {
+                                                              final confirm =
+                                                                  await showDialog<
+                                                                      bool>(
+                                                                context:
+                                                                    context,
+                                                                builder:
+                                                                    (context) =>
+                                                                        AlertDialog(
+                                                                  backgroundColor:
+                                                                      Colors
+                                                                          .white,
+                                                                  shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              16)),
+                                                                  title: Text(
+                                                                    "Delete Lane?",
+                                                                    style: GoogleFonts.poppins(
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .w600,
+                                                                        fontSize:
+                                                                            18,
+                                                                        color: Colors
+                                                                            .black),
+                                                                  ),
+                                                                  content: Text(
+                                                                    "Are you sure you want to delete this lane?",
+                                                                    style: GoogleFonts.poppins(
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .w500,
+                                                                        color: Colors
+                                                                            .black87),
+                                                                  ),
+                                                                  actionsPadding: const EdgeInsets
+                                                                      .symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                      vertical:
+                                                                          8),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                      style: TextButton
+                                                                          .styleFrom(
+                                                                        foregroundColor:
+                                                                            Colors.black,
+                                                                        textStyle:
+                                                                            GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                                                                      ),
+                                                                      onPressed: () => Navigator.pop(
+                                                                          context,
+                                                                          false),
+                                                                      child: const Text(
+                                                                          "No"),
+                                                                    ),
+                                                                    TextButton(
+                                                                      style: TextButton
+                                                                          .styleFrom(
+                                                                        foregroundColor:
+                                                                            Colors.redAccent,
+                                                                        textStyle:
+                                                                            GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                                                      ),
+                                                                      onPressed: () => Navigator.pop(
+                                                                          context,
+                                                                          true),
+                                                                      child: const Text(
+                                                                          "Yes"),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
+
+                                                              if (confirm ==
+                                                                  true) {
+                                                                try {
+                                                                  await AdminApi()
+                                                                      .deleteLane(
+                                                                          lane.id);
+                                                                  if (context
+                                                                      .mounted) {
+                                                                    ScaffoldMessenger.of(
+                                                                            context)
+                                                                        .showSnackBar(
+                                                                      SnackBar(
+                                                                        content: Text(
+                                                                            "Lane deleted",
+                                                                            style:
+                                                                                GoogleFonts.poppins(color: Colors.white)),
+                                                                        backgroundColor:
+                                                                            Colors.redAccent,
+                                                                        behavior:
+                                                                            SnackBarBehavior.floating,
+                                                                        margin: const EdgeInsets
+                                                                            .all(
+                                                                            16),
+                                                                        shape: RoundedRectangleBorder(
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(12)),
+                                                                      ),
+                                                                    );
+                                                                  }
+
+                                                                  setState(
+                                                                      () {});
+                                                                } on APIException catch (e) {
+                                                                  if (context
+                                                                      .mounted) {
+                                                                    ScaffoldMessenger.of(
+                                                                            context)
+                                                                        .showSnackBar(
+                                                                      SnackBar(
+                                                                        content: Text(
+                                                                            e.message,
+                                                                            style: GoogleFonts.poppins(color: Colors.white)),
+                                                                        backgroundColor:
+                                                                            Colors.redAccent,
+                                                                        behavior:
+                                                                            SnackBarBehavior.floating,
+                                                                        margin: const EdgeInsets
+                                                                            .all(
+                                                                            16),
+                                                                        shape: RoundedRectangleBorder(
+                                                                            borderRadius:
+                                                                                BorderRadius.circular(12)),
+                                                                      ),
+                                                                    );
+                                                                  }
+                                                                }
+                                                              }
+                                                            },
+                                                          ),
+                                                          const Icon(
+                                                            Icons
+                                                                .arrow_forward_ios_rounded,
+                                                            color:
+                                                                Colors.black54,
+                                                            size: 20,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      contentPadding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                              vertical: 3,
+                                                              horizontal: 16),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                      ),
+                                                    ));
                                               },
                                             ),
                                     );

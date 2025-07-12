@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -175,12 +176,36 @@ class AdminApi {
     await _dio.delete('/admin/lanes/$laneId');
   }
 
-  Future<void> giveAccess(List<int> userIds, int roadwayId) async {
-    final form = FormData.fromMap({
-      'user_ids': userIds,
-      'roadway_id': roadwayId,
-    });
-    await _dio.post('/admin/access', data: form);
+  Future<void> updateAccess(Map<int, bool> accessMap, int roadwayId) async {
+    try {
+      final body = {
+        'access_map':
+            accessMap.map((key, value) => MapEntry(key.toString(), value)),
+        'roadway_id': roadwayId,
+      };
+
+      await _dio.post(
+        '/admin/access',
+        data: body,
+        options: Options(
+          contentType: Headers.jsonContentType,
+        ),
+      );
+    } catch (e) {
+      log('Access update error: $e');
+      throw APIException('Failed to update access');
+    }
+  }
+
+  Future<List<InspectionOfficer>> getOfficersWithAccess(int roadwayId) async {
+    try {
+      final response = await _dio.get('/admin/roadways/$roadwayId/officers');
+      return (response.data as List)
+          .map((e) => InspectionOfficer.fromJson(e))
+          .toList();
+    } catch (e) {
+      throw APIException('Failed to fetch assigned officers');
+    }
   }
 
   Future<void> uploadLaneData(
