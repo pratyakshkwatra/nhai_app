@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chewie/chewie.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -575,9 +576,11 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tileProvider = FMTCTileProvider(
-      stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
-    );
+    final tileProvider = kIsWeb
+        ? null
+        : FMTCTileProvider(
+            stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+          );
 
     return Scaffold(
         backgroundColor: Colors.white,
@@ -631,9 +634,10 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                           if (trackPoints.length >= 2) {
                             polyLines.add(
                               Polyline(
-                                strokeWidth: 16,
-                                color: (frame.area != null &&
-                                        frame.refArea != null &&
+                                strokeWidth: 8,
+                                color: ((frame.roughness! > frame.refRough!) ||
+                                        frame.rut! > frame.refRut! ||
+                                        frame.crack! > frame.refCrack! ||
                                         frame.area! > frame.refArea!)
                                     ? Colors.redAccent.shade200
                                     : Colors.black,
@@ -881,14 +885,10 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                               BorderRadius.circular(16),
                                         ),
                                         child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
-                                            child: Stack(
-                                              alignment: Alignment.bottomRight,
-                                              children: [
-                                                playerWidget!,
-                                              ],
-                                            )),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: playerWidget,
+                                        ),
                                       ),
                                       Container(
                                         clipBehavior: Clip.antiAlias,
@@ -941,7 +941,9 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                     userAgentPackageName:
                                                         'com.example.nhai_app',
                                                     subdomains: ["a", "b", "c"],
-                                                    tileProvider: tileProvider,
+                                                    tileProvider: kIsWeb
+                                                        ? null
+                                                        : tileProvider,
                                                   ),
                                                   PolylineLayer(
                                                     polylines: polyLines,

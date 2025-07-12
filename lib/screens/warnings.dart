@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chewie/chewie.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -200,7 +201,7 @@ class _WarningsPageState extends State<WarningsPage> {
     return urls.last;
   }
 
-  void showCustomModalBottomSheet(Warning warning, TileProvider tileProvider) {
+  void showCustomModalBottomSheet(Warning warning, TileProvider? tileProvider) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -482,9 +483,11 @@ Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.l
   @override
   Widget build(BuildContext context) {
     final center = getCenter(widget.warnings);
-    final tileProvider = FMTCTileProvider(
-      stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
-    );
+    final tileProvider = kIsWeb
+        ? null
+        : FMTCTileProvider(
+            stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+          );
 
     return Scaffold(
       backgroundColor: Colors.white,

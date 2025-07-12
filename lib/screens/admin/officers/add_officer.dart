@@ -1,5 +1,6 @@
+import 'dart:io' show File;
 import 'dart:math';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,7 +23,9 @@ class AddOfficerScreen extends StatefulWidget {
 class _AddOfficerScreenState extends State<AddOfficerScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  File? _profileImage;
+  File? _profileImageFile;
+  Uint8List? _profileImageBytes;
+  String? _imageFilename;
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
@@ -30,9 +33,17 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
     final image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      setState(() {
-        _profileImage = File(image.path);
-      });
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _profileImageBytes = bytes;
+          _imageFilename = image.name;
+        });
+      } else {
+        setState(() {
+          _profileImageFile = File(image.path);
+        });
+      }
     }
   }
 
@@ -46,73 +57,57 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
       _passwordController.text = pass;
     });
     Clipboard.setData(ClipboardData(text: pass));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Random password generated & copied!',
-          style: GoogleFonts.poppins(color: Colors.white),
-        ),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Random password generated & copied!',
+          style: GoogleFonts.poppins(color: Colors.white)),
+      backgroundColor: Colors.redAccent,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.all(16),
+    ));
   }
 
   void _submit() async {
     if (_isLoading) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
 
-    if (mounted) {
-      try {
-        await AdminApi().createOfficer(
-          _usernameController.text,
-          _passwordController.text,
-          image: _profileImage,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Officer Created',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
-        }
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            if (mounted) {
-              Navigator.pop(context);
-            }
-          },
-        );
-      } on APIException catch (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                error.message,
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
-        }
+    try {
+      await AdminApi().createOfficer(
+        _usernameController.text,
+        _passwordController.text,
+        imageBytes: _profileImageBytes,
+        filename: _imageFilename,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Officer Created',
+              style: GoogleFonts.poppins(color: Colors.white)),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ));
+
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.pop(context);
+        });
       }
+    } on APIException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error.message,
+              style: GoogleFonts.poppins(color: Colors.white)),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ));
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -142,10 +137,13 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
                     child: CircleAvatar(
                       radius: 48,
                       backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _profileImage != null
-                          ? FileImage(_profileImage!)
-                          : null,
-                      child: _profileImage == null
+                      backgroundImage: _profileImageBytes != null
+                          ? MemoryImage(_profileImageBytes!)
+                          : _profileImageFile != null
+                              ? FileImage(_profileImageFile!) as ImageProvider
+                              : null,
+                      child: (_profileImageBytes == null &&
+                              _profileImageFile == null)
                           ? const Icon(Icons.person,
                               size: 48, color: Colors.black)
                           : null,
@@ -163,11 +161,8 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         padding: const EdgeInsets.all(6),
-                        child: const Icon(
-                          Icons.edit,
-                          size: 14,
-                          color: Colors.white,
-                        ),
+                        child: const Icon(Icons.edit,
+                            size: 14, color: Colors.white),
                       ),
                     ),
                   ),
@@ -201,14 +196,12 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
                         icon: const Icon(Icons.copy, color: Colors.black),
                         onPressed: () {
                           Clipboard.setData(
-                            ClipboardData(text: _passwordController.text),
-                          );
+                              ClipboardData(text: _passwordController.text));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                'Password copied!',
-                                style: GoogleFonts.poppins(color: Colors.white),
-                              ),
+                              content: Text('Password copied!',
+                                  style:
+                                      GoogleFonts.poppins(color: Colors.white)),
                               backgroundColor: Colors.black,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
@@ -289,7 +282,7 @@ class _RoundedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onPressed == null ? color.withValues(alpha: 0.6) : color,
+      color: onPressed == null ? color.withOpacity(0.6) : color,
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
@@ -300,14 +293,8 @@ class _RoundedButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           alignment: Alignment.center,
           child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
+              ? const CircularProgressIndicator(
+                  color: Colors.white, strokeWidth: 2)
               : Text(
                   label,
                   style: GoogleFonts.poppins(

@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
@@ -26,37 +27,60 @@ class AdminApi {
     }
   }
 
-  Future<void> createOfficer(String username, String password,
-      {File? image}) async {
+  Future<void> createOfficer(
+    String username,
+    String password, {
+    File? image,
+    Uint8List? imageBytes,
+    String? filename,
+  }) async {
     try {
-      final formData = FormData.fromMap({
-        'username': username,
-        'password': password,
-        if (image != null)
-          'image': await MultipartFile.fromFile(
+      final formData = FormData();
+
+      formData.fields
+        ..add(MapEntry('username', username))
+        ..add(MapEntry('password', password));
+
+      if (image != null) {
+        final mimeType = lookupMimeType(image.path) ?? 'image/jpeg';
+        formData.files.add(MapEntry(
+          'image',
+          await MultipartFile.fromFile(
             image.path,
             filename: basename(image.path),
-            contentType: MediaType(
-                'image', lookupMimeType(image.path)?.split('/')[1] ?? 'jpeg'),
+            contentType: MediaType.parse(mimeType),
           ),
-      });
+        ));
+      } else if (imageBytes != null && filename != null) {
+        final mimeType = lookupMimeType(filename) ?? 'image/jpeg';
+        formData.files.add(MapEntry(
+          'image',
+          MultipartFile.fromBytes(
+            imageBytes,
+            filename: filename,
+            contentType: MediaType.parse(mimeType),
+          ),
+        ));
+      }
 
       await _dio.post('/admin/officers', data: formData);
     } on DioException catch (e) {
-      if (e.response != null && e.response?.data != null) {
-        final detail = e.response?.data['detail'];
-        if (detail != null && detail is String) {
-          throw APIException(detail);
-        }
-      }
-      throw APIException('Failed to create officer');
-    } catch (e) {
+      final detail = e.response?.data?['detail'];
+      throw APIException(
+          detail is String ? detail : 'Failed to create officer');
+    } catch (_) {
       throw APIException('Failed to create officer');
     }
   }
 
   Future<void> updateOfficer(
-      int id, String? username, String? password, File? file) async {
+    int id,
+    String? username,
+    String? password, {
+    File? file,
+    Uint8List? bytes,
+    String? filename,
+  }) async {
     try {
       final formData = FormData.fromMap({
         if (username != null) 'username': username,
@@ -65,6 +89,13 @@ class AdminApi {
           'image': await MultipartFile.fromFile(
             file.path,
             filename: file.path.split('/').last,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        if (bytes != null && filename != null)
+          'image': MultipartFile.fromBytes(
+            bytes,
+            filename: filename,
+            contentType: MediaType('image', 'jpeg'),
           ),
       });
 
@@ -99,14 +130,18 @@ class AdminApi {
   }
 
   Future<Roadway> createRoadway(
-      String roadwayId, String name, File imageFile) async {
+    String roadwayId,
+    String name,
+    Uint8List imageBytes,
+    String filename,
+  ) async {
     try {
       final formData = FormData.fromMap({
         'roadway_id': roadwayId,
         'name': name,
-        'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: imageFile.path.split('/').last,
+        'image': MultipartFile.fromBytes(
+          imageBytes,
+          filename: filename,
         ),
       });
 
@@ -130,17 +165,29 @@ class AdminApi {
     String name,
     String roadwayId, {
     File? imageFile,
+    Uint8List? imageBytes,
+    String? filename,
   }) async {
-    final formData = FormData.fromMap({
+    final Map<String, dynamic> fields = {
       'name': name,
       'roadway_id': roadwayId,
-      if (imageFile != null)
-        'image': await MultipartFile.fromFile(
-          imageFile.path,
-          filename: imageFile.path.split('/').last,
-          contentType: MediaType('image', 'jpeg'),
-        ),
-    });
+    };
+
+    if (imageFile != null) {
+      fields['image'] = await MultipartFile.fromFile(
+        imageFile.path,
+        filename: imageFile.path.split('/').last,
+        contentType: MediaType('image', 'jpeg'),
+      );
+    } else if (imageBytes != null && filename != null) {
+      fields['image'] = MultipartFile.fromBytes(
+        imageBytes,
+        filename: filename,
+        contentType: MediaType('image', 'jpeg'),
+      );
+    }
+
+    final formData = FormData.fromMap(fields);
 
     final response = await _dio.put(
       '/admin/roadways/$id',
@@ -164,22 +211,25 @@ class AdminApi {
     required int roadwayId,
     required String laneId,
     required String direction,
-    required File videoFile,
-    required File excelFile,
+    required Uint8List videoBytes,
+    required String videoName,
+    required Uint8List excelBytes,
+    required String excelName,
     void Function(double progress)? onProgress,
   }) async {
     final formData = FormData.fromMap({
       'lane_id': laneId,
       'direction': direction,
-      'video': MultipartFile.fromStream(
-        videoFile.openRead,
-        await videoFile.length(),
-        filename: 'video.mp4',
+      'video': MultipartFile.fromBytes(
+        videoBytes,
+        filename: videoName,
         contentType: MediaType('video', 'mp4'),
       ),
-      'excel': await MultipartFile.fromFile(
-        excelFile.path,
-        filename: excelFile.path.split('/').last,
+      'excel': MultipartFile.fromBytes(
+        excelBytes,
+        filename: excelName,
+        contentType: MediaType('application',
+            'vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
       ),
     });
 

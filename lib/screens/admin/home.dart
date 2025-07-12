@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nhai_app/api/models/user.dart';
@@ -59,6 +60,7 @@ class _AdminHomeState extends State<AdminHome> {
           selectedIndex: selectedIndex,
           waterDropColor: Colors.black,
           inactiveIconColor: Colors.black,
+          bottomPadding: kIsWeb ? 18: null,
           iconSize: 32,
           barItems: [
             BarItem(
