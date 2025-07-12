@@ -22,8 +22,6 @@ class Lane {
 }
 
 class LaneData {
-  final int id;
-  final int laneId;
   final String? videoPath;
   final String? xlsxPath;
   final String processingStatus;
@@ -32,8 +30,6 @@ class LaneData {
   final DateTime createdAt;
 
   LaneData({
-    required this.id,
-    required this.laneId,
     this.videoPath,
     this.xlsxPath,
     required this.processingStatus,
@@ -44,8 +40,6 @@ class LaneData {
 
   factory LaneData.fromJson(Map<String, dynamic> json) {
     return LaneData(
-      id: json['id'],
-      laneId: json['lane_id'],
       videoPath: json['video_path'],
       xlsxPath: json['xlsx_path'],
       processingStatus: json['processing_status'],

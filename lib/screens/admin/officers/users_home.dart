@@ -4,7 +4,6 @@ import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/inspection_officer.dart';
 import 'package:nhai_app/api/models/user.dart';
-import 'package:nhai_app/screens/admin/home.dart';
 import 'package:nhai_app/screens/admin/officers/edit_officer.dart';
 import 'package:nhai_app/services/auth.dart';
 import 'package:recase/recase.dart';
@@ -23,24 +22,25 @@ class _UsersHomeState extends State<UsersHome> {
   final TextEditingController _searchController = TextEditingController();
   List<InspectionOfficer> allOfficers = [];
   List<InspectionOfficer> filteredOfficers = [];
-  bool _isLoading = true;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
-    _searchController.addListener(_filterOfficers);
+    _loadOfficers();
   }
 
-  Future<void> _fetchUsers() async {
+  Future<void> _loadOfficers() async {
+    setState(() => isLoading = true);
     try {
       allOfficers = await AdminApi().listOfficers();
-      filteredOfficers = List.from(allOfficers);
+      _filterOfficers();
     } catch (_) {
       allOfficers = [];
       filteredOfficers = [];
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-    setState(() => _isLoading = false);
   }
 
   void _filterOfficers() {
@@ -69,40 +69,52 @@ class _UsersHomeState extends State<UsersHome> {
           topRight: Radius.circular(24),
         ),
       ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              style: GoogleFonts.poppins(color: Colors.black),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search, color: Colors.black),
-                hintText: "Search officers...",
-                hintStyle: GoogleFonts.poppins(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey[100],
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+      child: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.redAccent))
+          : Column(
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                  child: TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.poppins(color: Colors.black),
+                    onChanged: (_) => _filterOfficers(),
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search, color: Colors.black),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon:
+                                const Icon(Icons.refresh, color: Colors.black),
+                            onPressed: _loadOfficers,
+                          ),
+                        ],
+                      ),
+                      hintText: "Search officers...",
+                      hintStyle: GoogleFonts.poppins(color: Colors.grey),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          if (!_isLoading && filteredOfficers.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 32),
-              child: Text("No matching officers found",
-                  style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w500, color: Colors.grey)),
-            ),
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Colors.redAccent))
-                : ListView.builder(
+                if (filteredOfficers.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 32),
+                    child: Text("No matching officers found",
+                        style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w500, color: Colors.grey)),
+                  ),
+                Expanded(
+                  child: ListView.builder(
                     itemCount: filteredOfficers.length,
                     itemBuilder: (context, index) {
                       final inspectionOfficer = filteredOfficers[index];
@@ -163,9 +175,7 @@ class _UsersHomeState extends State<UsersHome> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Created at: ${DateFormat('dd-MM-yyyy HH:mm').format(
-                                      inspectionOfficer.createdAt,
-                                    )}",
+                                    "Created at: ${DateFormat('dd-MM-yyyy HH:mm').format(inspectionOfficer.createdAt)}",
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w300,
@@ -195,7 +205,7 @@ class _UsersHomeState extends State<UsersHome> {
                                       ),
                                     ),
                                   );
-                                  if (mounted) setState(() {});
+                                  _loadOfficers();
                                 } else if (value == 'delete') {
                                   final confirm = await showDialog<bool>(
                                     context: context,
@@ -242,11 +252,9 @@ class _UsersHomeState extends State<UsersHome> {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           SnackBar(
-                                            content: Text(
-                                              'Profile deleted',
-                                              style: GoogleFonts.poppins(
-                                                  color: Colors.white),
-                                            ),
+                                            content: Text('Profile deleted',
+                                                style: GoogleFonts.poppins(
+                                                    color: Colors.white)),
                                             backgroundColor: Colors.redAccent,
                                             behavior: SnackBarBehavior.floating,
                                             margin: const EdgeInsets.all(16),
@@ -255,15 +263,7 @@ class _UsersHomeState extends State<UsersHome> {
                                                     BorderRadius.circular(12)),
                                           ),
                                         );
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AdminHome(
-                                              authService: widget.authService,
-                                              user: widget.user,
-                                            ),
-                                          ),
-                                        );
+                                        _loadOfficers();
                                       }
                                     } on APIException catch (e) {
                                       if (context.mounted) {
@@ -283,8 +283,6 @@ class _UsersHomeState extends State<UsersHome> {
                                         );
                                       }
                                     }
-
-                                    if (mounted) setState(() {});
                                   }
                                 }
                               },
@@ -322,9 +320,9 @@ class _UsersHomeState extends State<UsersHome> {
                       );
                     },
                   ),
-          ),
-        ],
-      ),
+                ),
+              ],
+            ),
     );
   }
 }

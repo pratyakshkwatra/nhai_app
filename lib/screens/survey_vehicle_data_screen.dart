@@ -77,7 +77,9 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
     trackPoints.clear();
     polyLines.clear();
     animatedMapController = AnimatedMapController(vsync: this);
-    videoPlayerController = VideoPlayerController.asset(widget.videoPath);
+    videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoPath),
+    );
     chewieController = ChewieController(
       videoPlayerController: videoPlayerController!,
       autoPlay: false,
@@ -513,11 +515,17 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
     );
   }
 
-  Future<List<List<dynamic>>> loadCsvData(String csvPath) async {
-    final rawData = await rootBundle.loadString(csvPath);
+  Future<List<List<dynamic>>> loadCsvData(String csvUrl) async {
+    final response = await http.get(Uri.parse(csvUrl));
 
-    final listData = const CsvToListConverter().convert(rawData, eol: '\n');
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load CSV from $csvUrl');
+    }
+
+    final csvRaw = response.body;
+    final listData = const CsvToListConverter().convert(csvRaw, eol: '\n');
     listData.removeAt(0);
+
     return listData;
   }
 
@@ -759,7 +767,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                             warnings: warnings,
                                             videoPath: widget.videoPath,
                                             surveyName:
-                                                "${widget.roadWay}-${widget.lane}",
+                                                "${widget.roadWay} - ${widget.lane}",
                                           );
                                         }));
                                       },

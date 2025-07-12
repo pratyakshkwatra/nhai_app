@@ -43,7 +43,9 @@ class _WarningsPageState extends State<WarningsPage> {
   @override
   void initState() {
     super.initState();
-    videoPlayerController = VideoPlayerController.asset(widget.videoPath);
+    videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoPath),
+    );
     chewieController = ChewieController(
       videoPlayerController: videoPlayerController!,
       autoPlay: false,
@@ -333,17 +335,29 @@ class _WarningsPageState extends State<WarningsPage> {
                         );
 
                         try {
-                          final byteData =
-                              await rootBundle.load(widget.videoPath);
                           final tempDir = await getTemporaryDirectory();
                           final filePath = '${tempDir.path}/temp_video.mp4';
 
-                          final file = File(filePath);
-                          await file
-                              .writeAsBytes(byteData.buffer.asUint8List());
+                          File file;
+
+                          if (widget.videoPath.startsWith('http')) {
+                            final response =
+                                await http.get(Uri.parse(widget.videoPath));
+                            if (response.statusCode != 200) {
+                              throw Exception('Failed to download video');
+                            }
+                            file = File(filePath);
+                            await file.writeAsBytes(response.bodyBytes);
+                          } else {
+                            final byteData =
+                                await rootBundle.load(widget.videoPath);
+                            file = File(filePath);
+                            await file
+                                .writeAsBytes(byteData.buffer.asUint8List());
+                          }
 
                           final videoTrimmer = VideoTrimmer();
-                          await videoTrimmer.loadVideo(filePath);
+                          await videoTrimmer.loadVideo(file.path);
 
                           final trimmedPath = await videoTrimmer.trimVideo(
                             startTimeMs: warning.duration.inMilliseconds - 5000,

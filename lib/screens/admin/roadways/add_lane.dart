@@ -30,6 +30,8 @@ class _AddLaneState extends State<AddLane> {
 
   String _selectedDirection = 'L';
   String _selectedLaneNumber = '1';
+  bool _pickingFile = false;
+  double _uploadProgress = 0.0;
 
   Future<void> _submit() async {
     final laneId = "$_selectedDirection$_selectedLaneNumber";
@@ -48,7 +50,11 @@ class _AddLaneState extends State<AddLane> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _uploadProgress = 0.0;
+    });
+
     try {
       await AdminApi().addLane(
         roadwayId: widget.roadwayId,
@@ -56,6 +62,9 @@ class _AddLaneState extends State<AddLane> {
         direction: _selectedDirection,
         videoFile: _videoFile!,
         excelFile: _excelFile!,
+        onProgress: (progress) {
+          setState(() => _uploadProgress = progress);
+        },
       );
 
       if (mounted) {
@@ -88,19 +97,27 @@ class _AddLaneState extends State<AddLane> {
   }
 
   Future<void> _pickFile(bool isVideo) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: isVideo ? FileType.video : FileType.custom,
-      allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
-    );
+    if (!_pickingFile) {
+      setState(() => _pickingFile = true);
 
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        if (isVideo) {
-          _videoFile = File(result.files.single.path!);
-        } else {
-          _excelFile = File(result.files.single.path!);
+      try {
+        final result = await FilePicker.platform.pickFiles(
+          type: isVideo ? FileType.video : FileType.custom,
+          allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
+        );
+
+        if (result != null && result.files.single.path != null) {
+          setState(() {
+            if (isVideo) {
+              _videoFile = File(result.files.single.path!);
+            } else {
+              _excelFile = File(result.files.single.path!);
+            }
+          });
         }
-      });
+      } finally {
+        setState(() => _pickingFile = false);
+      }
     }
   }
 
@@ -125,80 +142,22 @@ class _AddLaneState extends State<AddLane> {
               Row(
                 children: [
                   Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          canvasColor: Colors.white,
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedDirection,
-                            icon: const Icon(Icons.arrow_drop_down),
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(16),
-                            style: GoogleFonts.poppins(
-                                fontSize: 16, color: Colors.black),
-                            items: ['L', 'R']
-                                .map((dir) => DropdownMenuItem(
-                                      value: dir,
-                                      child: Text("Direction $dir"),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _selectedDirection = value);
-                              }
-                            },
-                          ),
-                        ),
-                      ),
+                    child: _buildDropdown(
+                      value: _selectedDirection,
+                      label: "Direction",
+                      items: ['L', 'R'],
+                      onChanged: (value) =>
+                          setState(() => _selectedDirection = value!),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    flex: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          canvasColor: Colors.white,
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedLaneNumber,
-                            icon: const Icon(Icons.arrow_drop_down),
-                            isExpanded: true,
-                            borderRadius: BorderRadius.circular(16),
-                            style: GoogleFonts.poppins(
-                                fontSize: 16, color: Colors.black),
-                            items: List.generate(10, (i) => '${i + 1}')
-                                .map((lane) => DropdownMenuItem(
-                                      value: lane,
-                                      child: Text("Lane $lane"),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _selectedLaneNumber = value);
-                              }
-                            },
-                          ),
-                        ),
-                      ),
+                    child: _buildDropdown(
+                      value: _selectedLaneNumber,
+                      label: "Lane",
+                      items: List.generate(10, (i) => '${i + 1}'),
+                      onChanged: (value) =>
+                          setState(() => _selectedLaneNumber = value!),
                     ),
                   ),
                 ],
@@ -219,6 +178,34 @@ class _AddLaneState extends State<AddLane> {
                 fileType: 'excel',
                 onTap: () => _pickFile(false),
               ),
+              if (_isLoading)
+                Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadiusGeometry.circular(12),
+                          child: LinearProgressIndicator(
+                            value: _uploadProgress,
+                            color: Colors.redAccent,
+                            backgroundColor: Colors.red.shade100,
+                            minHeight: 18,
+                          ),
+                        ),
+                        Text(
+                          '${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               const SizedBox(height: 24),
               _RoundedButton(
                 label: 'Create Lane',
@@ -227,6 +214,39 @@ class _AddLaneState extends State<AddLane> {
                 onPressed: _submit,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String value,
+    required String label,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(canvasColor: Colors.white),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            icon: const Icon(Icons.arrow_drop_down),
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(16),
+            style: GoogleFonts.poppins(fontSize: 16, color: Colors.black),
+            items: items
+                .map((val) =>
+                    DropdownMenuItem(value: val, child: Text("$label $val")))
+                .toList(),
+            onChanged: onChanged,
           ),
         ),
       ),
@@ -291,8 +311,8 @@ class _FilePickerCard extends StatelessWidget {
 
   String _formatBytes(int bytes) {
     if (bytes < 1024) return "$bytes B";
-    if (bytes < 1024 * 1024) return "\${(bytes / 1024).toStringAsFixed(1)} KB";
-    return "\${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
   }
 
   @override
@@ -308,9 +328,7 @@ class _FilePickerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.grey[100],
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Row(
           children: [

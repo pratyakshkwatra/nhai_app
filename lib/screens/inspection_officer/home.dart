@@ -8,9 +8,8 @@ import 'package:nhai_app/api/models/user.dart';
 import 'package:nhai_app/models/survey.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:nhai_app/screens/auth/login.dart';
-import 'package:nhai_app/screens/survey_vehicle_data_screen.dart';
+import 'package:nhai_app/screens/inspection_officer/roadways.dart';
 import 'package:nhai_app/services/auth.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 
 class InspectionHome extends StatefulWidget {
@@ -183,194 +182,65 @@ class _InspectionHomeState extends State<InspectionHome> {
 
   double _tryNum(dynamic val) => double.tryParse(val.toString()) ?? 0.0;
 
-  shareData(String date, double distance, double roadHealth, double roughness,
-      double rut, double crack, double ravelling, Survey survey) async {
-    SharePlus.instance.share(ShareParams(
-        text:
-            '*Survey: ${survey.roadway}-${survey.lane}*\n\n*Date*: $date\n*Distance Covered*: ${distance.toStringAsFixed(2)}\n*Road Health*: ${roadHealth.toStringAsFixed(2)}/5 ❤️\n\n*Roughness*: ${roughness.toStringAsFixed(2)}\n*Rut*: ${rut.toStringAsFixed(2)}\n*Crack*: ${crack.toStringAsFixed(2)}\n*Ravelling*: ${ravelling.toStringAsFixed(2)}'));
-  }
-
-  Widget surveyCard(Survey survey, int index) {
-    final bool hasImage = survey.imagePath.isNotEmpty;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-      height: MediaQuery.of(context).size.height * 0.16,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: hasImage ? Colors.black : Colors.red.shade100,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (hasImage)
-              Image.asset(
-                survey.imagePath,
-                fit: BoxFit.cover,
-                color: Colors.black.withAlpha(80),
-                colorBlendMode: BlendMode.darken,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.red.shade100,
-                  child: const Icon(Icons.broken_image, size: 48),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AutoSizeText(
-                        "${survey.roadway} - ${survey.lane}",
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          shadows: const [
-                            Shadow(
-                              offset: Offset(1, 1),
-                              blurRadius: 5,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      FutureBuilder<Map<String, dynamic>>(
-                        future: loadAndProcessCSV(survey.csvPath),
-                        builder: (context, snapshot) {
-                          final rating = snapshot.hasData
-                              ? snapshot.data!['road_health'] ?? 0.0
-                              : 0.0;
-
-                          return RatingBarIndicator(
-                            rating: rating,
-                            itemBuilder: (context, _) => const Icon(
-                              Icons.favorite,
-                              color: Colors.redAccent,
-                            ),
-                            unratedColor: Colors.white.withAlpha(60),
-                            itemCount: 5,
-                            itemSize: 20,
-                            direction: Axis.horizontal,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (viewIndex != null) {
-                        if (viewIndex == index) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => SurveyVehicleDataScreen(
-                                videoPath: survey.videoPath,
-                                csvPath: survey.csvPath,
-                                lane: survey.lane,
-                                roadWay: survey.roadway,
-                              ),
-                            ),
-                          );
-                        } else {
-                          setState(() => viewIndex = index);
-                        }
-                      } else {
-                        setState(() => viewIndex = index);
-                      }
-                    },
-                    onLongPress: () {
-                      if (viewIndex == index) {
-                        setState(() => viewIndex = null);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withAlpha(220),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 3,
-                    ),
-                    child: Row(
-                      children: [
-                        AutoSizeText(
-                          (viewIndex != null)
-                              ? (viewIndex == index ? 'INSPECT' : 'VIEW')
-                              : 'VIEW',
-                          maxLines: 1,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          (viewIndex != null)
-                              ? (viewIndex == index
-                                  ? Icons.search
-                                  : Icons.visibility)
-                              : Icons.visibility,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget progressBarWithTitle(String title, double value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("$title:",
-            style:
-                GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        Text(
+          "$title:",
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         SizedBox(
           width: MediaQuery.of(context).size.width * 0.5,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                LinearProgressIndicator(
-                  value: value,
-                  color: Colors.black.withValues(alpha: 0.6),
-                  backgroundColor: Colors.red.shade100,
-                  minHeight: 16,
+          child: Container(
+            height: 22,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F0F3),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  offset: Offset(-2, -2),
+                  blurRadius: 4,
                 ),
-                Text(
-                  "${(value * 100).toStringAsFixed(2)}%",
-                  style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w300),
+                BoxShadow(
+                  color: Colors.red.shade200.withValues(alpha: 0.5),
+                  offset: Offset(2, 2),
+                  blurRadius: 4,
                 ),
               ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: value),
+                      duration: Duration(milliseconds: 600),
+                      builder: (context, val, _) => LinearProgressIndicator(
+                        value: val,
+                        minHeight: 22,
+                        backgroundColor: Colors.red.shade100,
+                        color: Colors.redAccent.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    Text(
+                      "${(value * 100).toStringAsFixed(2)}%",
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -437,93 +307,155 @@ class _InspectionHomeState extends State<InspectionHome> {
                       final crack = data["crack"];
                       final ravelling = data["ravelling"];
 
-                      return Column(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AutoSizeText(
-                                  viewIndex != null
-                                      ? "Lane Length: ${distance.toStringAsFixed(2)} KM"
-                                      : "Total Distance: ${distance.toStringAsFixed(2)} KM",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                      return AnimatedOpacity(
+                        opacity: 1.0,
+                        duration: const Duration(milliseconds: 600),
+                        curve: Curves.easeInOut,
+                        child: Column(
+                          children: [
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0, end: distance),
+                              duration: const Duration(milliseconds: 800),
+                              curve: Curves.easeOut,
+                              builder: (context, animatedDistance, _) {
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(220),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                  maxLines: 1,
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    AutoSizeText(
-                                      viewIndex != null
-                                          ? "Lane Health:"
-                                          : "Highway Health:",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      AutoSizeText(
+                                        viewIndex != null
+                                            ? "Lane Length: ${animatedDistance.toStringAsFixed(2)} KM"
+                                            : "Total Distance: ${animatedDistance.toStringAsFixed(2)} KM",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
                                       ),
-                                      maxLines: 1,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    RatingBarIndicator(
-                                      rating: roadHealth,
-                                      itemBuilder: (context, _) => const Icon(
-                                        Icons.favorite,
-                                        color: Colors.redAccent,
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          AutoSizeText(
+                                            viewIndex != null
+                                                ? "Lane Health:"
+                                                : "Highway Health:",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            maxLines: 1,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          TweenAnimationBuilder<double>(
+                                            tween: Tween<double>(
+                                                begin: 0, end: roadHealth),
+                                            duration: const Duration(
+                                                milliseconds: 800),
+                                            curve: Curves.easeOut,
+                                            builder:
+                                                (context, animatedRating, _) {
+                                              return Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 4,
+                                                        vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.white
+                                                          .withAlpha(180),
+                                                      offset:
+                                                          const Offset(-2, -2),
+                                                      blurRadius: 4,
+                                                    ),
+                                                    BoxShadow(
+                                                      color: Colors.red.shade200
+                                                          .withAlpha(130),
+                                                      offset:
+                                                          const Offset(2, 2),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
+                                                  border: Border.all(
+                                                    color: Colors.red.shade100
+                                                        .withAlpha(100),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: RatingBarIndicator(
+                                                  rating: animatedRating,
+                                                  itemBuilder: (context, _) =>
+                                                      const Icon(
+                                                    Icons.favorite,
+                                                    color: Colors.redAccent,
+                                                  ),
+                                                  unratedColor:
+                                                      Colors.red.shade100,
+                                                  itemCount: 5,
+                                                  itemSize: 18,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                      unratedColor:
-                                          Colors.black.withValues(alpha: 0.6),
-                                      itemCount: 5,
-                                      itemSize: 20,
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 500),
+                              child: Container(
+                                key: ValueKey("stats_card"),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(220),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black26,
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                child: Column(
+                                  children: [
+                                    progressBarWithTitle(
+                                        "Roughness", roughness),
+                                    const SizedBox(height: 8),
+                                    progressBarWithTitle("Rut", rut),
+                                    const SizedBox(height: 8),
+                                    progressBarWithTitle("Crack", crack),
+                                    const SizedBox(height: 8),
+                                    progressBarWithTitle(
+                                        "Ravelling", ravelling),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            child: Column(
-                              children: [
-                                progressBarWithTitle("Roughness", roughness),
-                                const SizedBox(height: 8),
-                                progressBarWithTitle("Rut", rut),
-                                const SizedBox(height: 8),
-                                progressBarWithTitle("Crack", crack),
-                                const SizedBox(height: 8),
-                                progressBarWithTitle("Ravelling", ravelling),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -610,23 +542,14 @@ class _InspectionHomeState extends State<InspectionHome> {
                           ),
                         ],
                       ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.025,
-                      ),
                       Expanded(
-                        child: ListView.builder(
-                          physics: BouncingScrollPhysics(),
-                          itemCount: surveys.length,
-                          itemBuilder: (context, index) {
-                            Survey survey = surveys[index];
-
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom:
-                                    MediaQuery.of(context).size.width * 0.0375,
-                              ),
-                              child: surveyCard(survey, index),
-                            );
+                        child: RoadwaysOfficer(
+                          authService: widget.authService,
+                          user: widget.user,
+                          onView: (int? index) {
+                            setState(() {
+                              viewIndex = index;
+                            });
                           },
                         ),
                       ),

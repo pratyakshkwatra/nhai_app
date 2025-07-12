@@ -42,6 +42,14 @@ class AdminApi {
       });
 
       await _dio.post('/admin/officers', data: formData);
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        final detail = e.response?.data['detail'];
+        if (detail != null && detail is String) {
+          throw APIException(detail);
+        }
+      }
+      throw APIException('Failed to create officer');
     } catch (e) {
       throw APIException('Failed to create officer');
     }
@@ -158,19 +166,31 @@ class AdminApi {
     required String direction,
     required File videoFile,
     required File excelFile,
+    void Function(double progress)? onProgress,
   }) async {
     final formData = FormData.fromMap({
       'lane_id': laneId,
       'direction': direction,
-      'video': await MultipartFile.fromFile(videoFile.path,
-          filename: videoFile.path.split('/').last),
-      'excel': await MultipartFile.fromFile(excelFile.path,
-          filename: excelFile.path.split('/').last),
+      'video': MultipartFile.fromStream(
+        videoFile.openRead,
+        await videoFile.length(),
+        filename: 'video.mp4',
+        contentType: MediaType('video', 'mp4'),
+      ),
+      'excel': await MultipartFile.fromFile(
+        excelFile.path,
+        filename: excelFile.path.split('/').last,
+      ),
     });
 
     final response = await _dio.post(
       '/admin/roadways/$roadwayId/lanes',
       data: formData,
+      onSendProgress: (int sent, int total) {
+        if (onProgress != null && total > 0) {
+          onProgress(sent / total);
+        }
+      },
     );
 
     return Lane.fromJson(response.data);

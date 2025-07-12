@@ -194,7 +194,7 @@ class _AddOfficerScreenState extends State<AddOfficerScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.shuffle, color: Colors.black),
+                        icon: const Icon(Icons.casino, color: Colors.black),
                         onPressed: _generatePassword,
                       ),
                       IconButton(

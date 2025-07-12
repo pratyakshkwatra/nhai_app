@@ -9,7 +9,6 @@ import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/inspection_officer.dart';
 import 'package:nhai_app/api/models/user.dart';
-import 'package:nhai_app/screens/admin/home.dart';
 import 'package:nhai_app/services/auth.dart';
 
 class EditOfficerScreen extends StatefulWidget {
@@ -33,7 +32,7 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
   final TextEditingController _passwordController = TextEditingController();
   File? _newProfileImage;
   bool _isLoading = false;
-  bool _isLoadingDelete = false;
+  final bool _isLoadingDelete = false;
 
   @override
   void initState() {
@@ -234,72 +233,6 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
                     _submit();
                   }
                 },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: TextButton.icon(
-                  onPressed: () async {
-                    if (_isLoadingDelete) return;
-                    setState(() => _isLoadingDelete = true);
-                    try {
-                      await AdminApi().deleteOfficer(
-                        widget.inspectionOfficer.id,
-                      );
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Profile deleted',
-                                style:
-                                    GoogleFonts.poppins(color: Colors.white)),
-                            backgroundColor: Colors.redAccent,
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AdminHome(
-                              authService: widget.authService,
-                              user: widget.user,
-                            ),
-                          ),
-                        );
-                      }
-                    } on APIException catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(e.message,
-                                style:
-                                    GoogleFonts.poppins(color: Colors.white)),
-                            backgroundColor: Colors.redAccent,
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
-                      }
-                    } finally {
-                      setState(() => _isLoadingDelete = false);
-                    }
-                  },
-                  icon: const Icon(Icons.delete, color: Colors.black),
-                  label: Text(
-                    'Delete Officer',
-                    style: GoogleFonts.poppins(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),

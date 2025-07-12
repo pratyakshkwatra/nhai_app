@@ -134,6 +134,7 @@ class _AdminHomeState extends State<AdminHome> {
                               },
                             ),
                           );
+                          setState(() {});
                         } else if (selectedIndex == 1) {
                           await Navigator.push(
                             context,
@@ -148,6 +149,11 @@ class _AdminHomeState extends State<AdminHome> {
                           );
                         }
                         setState(() {});
+                        pageController.animateToPage(
+                          selectedIndex,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutQuad,
+                        );
                       },
                       child: Container(
                         decoration: BoxDecoration(
@@ -162,9 +168,6 @@ class _AdminHomeState extends State<AdminHome> {
                       ),
                     ),
                   ],
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.025,
                 ),
                 Expanded(
                   child: PageView(
