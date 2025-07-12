@@ -100,6 +100,7 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
               height: MediaQuery.of(context).size.height * 0.16,
               width: double.infinity,
               decoration: BoxDecoration(
+                
                 color: hasImage ? Colors.black : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -383,6 +384,15 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                                                     .withValues(
                                                                         alpha:
                                                                             0.6),
+                                                                border:
+                                                                    Border.all(
+                                                                  color: Colors
+                                                                      .redAccent
+                                                                      .withValues(
+                                                                          alpha:
+                                                                              0.1),
+                                                                  width: 3,
+                                                                ),
                                                                 borderRadius:
                                                                     BorderRadius
                                                                         .circular(

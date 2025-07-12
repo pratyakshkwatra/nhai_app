@@ -260,7 +260,7 @@ class _InspectionHomeState extends State<InspectionHome> {
             width: MediaQuery.of(context).size.width,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.redAccent, Colors.redAccent.shade100],
+                colors: [Colors.redAccent.shade700, Colors.redAccent.shade200],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -374,7 +374,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                                                         horizontal: 4,
                                                         vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black,
+                                                  color: Colors.transparent,
                                                   borderRadius:
                                                       BorderRadius.circular(12),
                                                   boxShadow: [
@@ -407,7 +407,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                                                     color: Colors.redAccent,
                                                   ),
                                                   unratedColor:
-                                                      Colors.red.shade100,
+                                                      Colors.red.shade200,
                                                   itemCount: 5,
                                                   itemSize: 18,
                                                 ),
@@ -531,7 +531,8 @@ class _InspectionHomeState extends State<InspectionHome> {
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: Colors.redAccent,
+                                color: Colors.redAccent.shade200
+                                    .withValues(alpha: 0.9),
                               ),
                               padding: EdgeInsets.all(8),
                               child: Icon(
