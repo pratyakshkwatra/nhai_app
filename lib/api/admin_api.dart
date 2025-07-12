@@ -5,7 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart';
 
 import 'package:nhai_app/api/models/inspection_officer.dart';
-
+import 'package:mime/mime.dart';
 import './models/lane.dart';
 import './models/roadway.dart';
 import 'api_client.dart';
@@ -35,7 +35,8 @@ class AdminApi {
           'image': await MultipartFile.fromFile(
             image.path,
             filename: basename(image.path),
-            contentType: MediaType('image', 'jpeg'),
+            contentType: MediaType(
+                'image', lookupMimeType(image.path)?.split('/')[1] ?? 'jpeg'),
           ),
       });
 

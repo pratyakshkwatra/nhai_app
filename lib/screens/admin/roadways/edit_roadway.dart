@@ -18,7 +18,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
   final TextEditingController _roadwayIdController = TextEditingController();
   final TextEditingController _roadwayNameController = TextEditingController();
   File? _roadwayImage;
-  bool _isLoading = false;
+  bool _isUpdating = false;
 
   @override
   void initState() {
@@ -51,12 +51,12 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isUpdating = true);
     try {
       await AdminApi().updateRoadway(
         widget.roadway.id,
-        _roadwayIdController.text,
         _roadwayNameController.text,
+        _roadwayIdController.text,
         imageFile: _roadwayImage,
       );
 
@@ -86,7 +86,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
         ));
       }
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => _isUpdating = false);
     }
   }
 
@@ -110,31 +110,52 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
             children: [
               GestureDetector(
                 onTap: _pickImage,
-                child: Container(
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(16),
-                    image: _roadwayImage != null
-                        ? DecorationImage(
-                            image: FileImage(_roadwayImage!),
-                            fit: BoxFit.cover,
-                          )
-                        : (widget.roadway.imagePath != null &&
-                                widget.roadway.imagePath!.isNotEmpty)
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                        image: _roadwayImage != null
                             ? DecorationImage(
-                                image: NetworkImage(widget.roadway.imagePath!),
+                                image: FileImage(_roadwayImage!),
                                 fit: BoxFit.cover,
                               )
-                            : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: _roadwayImage == null &&
-                          (widget.roadway.imagePath == null ||
-                              widget.roadway.imagePath!.isEmpty)
-                      ? Icon(Icons.add_photo_alternate,
-                          color: Colors.black54, size: 48)
-                      : null,
+                            : (widget.roadway.imagePath != null &&
+                                    widget.roadway.imagePath!.isNotEmpty)
+                                ? DecorationImage(
+                                    image:
+                                        NetworkImage(widget.roadway.imagePath!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: _roadwayImage == null &&
+                              (widget.roadway.imagePath == null ||
+                                  widget.roadway.imagePath!.isEmpty)
+                          ? Icon(Icons.add_photo_alternate,
+                              color: Colors.black54, size: 48)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.75),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -155,9 +176,10 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
               _RoundedButton(
                 label: 'Save Changes',
                 color: redAccent,
-                isLoading: _isLoading,
-                onPressed: _submit,
+                isLoading: _isUpdating,
+                onPressed: _isUpdating ? null : _submit,
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

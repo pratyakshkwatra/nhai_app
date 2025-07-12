@@ -162,9 +162,6 @@ class CustomGraph extends StatelessWidget {
                 show: false,
                 drawVerticalLine: true,
                 horizontalInterval: 3,
-                // checkToShowHorizontalLine: (double value) {
-                //   return value == 1 || value == 6 || value == 4 || value == 5;
-                // },
               ),
             ),
           ),

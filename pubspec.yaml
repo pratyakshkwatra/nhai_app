@@ -60,6 +60,7 @@ dependencies:
   path: ^1.9.1
   recase: ^4.1.0
   auto_size_text: ^3.0.0
+  mime: ^2.0.0
 
 dev_dependencies:
   flutter_test:

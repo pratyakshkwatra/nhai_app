@@ -123,7 +123,7 @@ class _AdminHomeState extends State<AdminHome> {
                     GestureDetector(
                       onTap: () async {
                         if (selectedIndex == 0) {
-                          Navigator.push(
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) {
@@ -135,7 +135,7 @@ class _AdminHomeState extends State<AdminHome> {
                             ),
                           );
                         } else if (selectedIndex == 1) {
-                          Navigator.push(
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) {
@@ -147,6 +147,7 @@ class _AdminHomeState extends State<AdminHome> {
                             ),
                           );
                         }
+                        setState(() {});
                       },
                       child: Container(
                         decoration: BoxDecoration(

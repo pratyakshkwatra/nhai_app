@@ -12,7 +12,6 @@ class Roadway {
   });
 
   factory Roadway.fromJson(Map<String, dynamic> json) {
-    print(json);
     return Roadway(
       id: json['id'],
       roadwayId: json['roadway_id'],

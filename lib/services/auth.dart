@@ -48,8 +48,7 @@ class AuthService {
 
     try {
       final user = await _authAPI.refreshAccessToken(refreshToken);
-      await _secureStorage.write(
-          key: _accessTokenKey, value: user.accessToken);
+      await _secureStorage.write(key: _accessTokenKey, value: user.accessToken);
 
       return user;
     } catch (e) {
