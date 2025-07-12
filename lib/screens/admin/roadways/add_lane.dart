@@ -4,6 +4,8 @@ import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/user.dart';
 import 'package:nhai_app/services/auth.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class AddLane extends StatefulWidget {
   final AuthService authService;
@@ -22,25 +24,39 @@ class AddLane extends StatefulWidget {
 }
 
 class _AddLaneState extends State<AddLane> {
-  final TextEditingController _laneIdController = TextEditingController();
   bool _isLoading = false;
+  File? _videoFile;
+  File? _excelFile;
+
+  String _selectedDirection = 'L';
+  String _selectedLaneNumber = '1';
 
   Future<void> _submit() async {
-    if (_laneIdController.text.isEmpty) {
+    final laneId = "$_selectedDirection$_selectedLaneNumber";
+
+    if (_selectedLaneNumber.isEmpty ||
+        _videoFile == null ||
+        _excelFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Lane ID is required",
+        content: Text("All fields are required",
             style: GoogleFonts.poppins(color: Colors.white)),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ));
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      await AdminApi().addLane(widget.roadwayId, _laneIdController.text);
+      await AdminApi().addLane(
+        roadwayId: widget.roadwayId,
+        laneId: laneId,
+        direction: _selectedDirection,
+        videoFile: _videoFile!,
+        excelFile: _excelFile!,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -71,6 +87,23 @@ class _AddLaneState extends State<AddLane> {
     }
   }
 
+  Future<void> _pickFile(bool isVideo) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: isVideo ? FileType.video : FileType.custom,
+      allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        if (isVideo) {
+          _videoFile = File(result.files.single.path!);
+        } else {
+          _excelFile = File(result.files.single.path!);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final redAccent = Colors.redAccent;
@@ -89,11 +122,102 @@ class _AddLaneState extends State<AddLane> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              _RoundedInputField(
-                controller: _laneIdController,
-                hintText: 'Lane ID (e.g. L1, R2)',
-                icon: Icons.drive_eta,
-                isPassword: false,
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          canvasColor: Colors.white,
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedDirection,
+                            icon: const Icon(Icons.arrow_drop_down),
+                            isExpanded: true,
+                            borderRadius: BorderRadius.circular(16),
+                            style: GoogleFonts.poppins(
+                                fontSize: 16, color: Colors.black),
+                            items: ['L', 'R']
+                                .map((dir) => DropdownMenuItem(
+                                      value: dir,
+                                      child: Text("Direction $dir"),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _selectedDirection = value);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          canvasColor: Colors.white,
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedLaneNumber,
+                            icon: const Icon(Icons.arrow_drop_down),
+                            isExpanded: true,
+                            borderRadius: BorderRadius.circular(16),
+                            style: GoogleFonts.poppins(
+                                fontSize: 16, color: Colors.black),
+                            items: List.generate(10, (i) => '${i + 1}')
+                                .map((lane) => DropdownMenuItem(
+                                      value: lane,
+                                      child: Text("Lane $lane"),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _selectedLaneNumber = value);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _FilePickerCard(
+                label: 'Pick Video File',
+                file: _videoFile,
+                icon: Icons.videocam_rounded,
+                fileType: 'video',
+                onTap: () => _pickFile(true),
+              ),
+              const SizedBox(height: 12),
+              _FilePickerCard(
+                label: 'Pick Excel Sheet',
+                file: _excelFile,
+                icon: Icons.grid_on_rounded,
+                fileType: 'excel',
+                onTap: () => _pickFile(false),
               ),
               const SizedBox(height: 24),
               _RoundedButton(
@@ -104,42 +228,6 @@ class _AddLaneState extends State<AddLane> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundedInputField extends StatelessWidget {
-  final String hintText;
-  final IconData icon;
-  final bool isPassword;
-  final TextEditingController controller;
-
-  const _RoundedInputField({
-    required this.controller,
-    required this.hintText,
-    required this.icon,
-    required this.isPassword,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      style: GoogleFonts.poppins(color: Colors.black),
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.black),
-        hintText: hintText,
-        hintStyle: GoogleFonts.poppins(color: Colors.grey),
-        filled: true,
-        fillColor: Colors.grey[100],
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
         ),
       ),
     );
@@ -180,6 +268,81 @@ class _RoundedButton extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilePickerCard extends StatelessWidget {
+  final String label;
+  final File? file;
+  final IconData icon;
+  final String fileType;
+  final VoidCallback onTap;
+
+  const _FilePickerCard({
+    required this.label,
+    required this.file,
+    required this.icon,
+    required this.fileType,
+    required this.onTap,
+  });
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) return "\${(bytes / 1024).toStringAsFixed(1)} KB";
+    return "\${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = file?.path.split('/').last;
+    final fileSize = file != null ? _formatBytes(file!.lengthSync()) : null;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 32, color: Colors.black54),
+            const SizedBox(width: 16),
+            Expanded(
+              child: file != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(fileName ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            )),
+                        Text(fileSize ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            )),
+                      ],
+                    )
+                  : Text(label,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      )),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.upload_rounded, color: Colors.black45),
+          ],
         ),
       ),
     );

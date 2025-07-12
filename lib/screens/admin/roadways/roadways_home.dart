@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -441,8 +443,8 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                   ),
                                 ),
                                 GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
+                                    onTap: () async {
+                                      await Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) {
@@ -454,6 +456,15 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                           },
                                         ),
                                       );
+                                      setState(() {});
+                                      Timer timer = Timer.periodic(
+                                          Duration(milliseconds: 500), (t) {
+                                        setState(() {});
+                                      });
+
+                                      Timer(Duration(seconds: 30), () {
+                                        timer.cancel();
+                                      });
                                     },
                                     child: const Icon(Icons.add,
                                         color: Colors.black54)),
@@ -545,8 +556,8 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                                           IconButton(
                                                             icon: const Icon(
                                                               Icons.delete,
-                                                              color: Colors
-                                                                  .black,
+                                                              color:
+                                                                  Colors.black,
                                                               size: 22,
                                                             ),
                                                             onPressed:

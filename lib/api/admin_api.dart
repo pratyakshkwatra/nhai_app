@@ -147,28 +147,32 @@ class AdminApi {
     await _dio.delete('/admin/roadways/$id');
   }
 
-  Future<void> uploadRoadwayImage(
-      int roadwayId, MultipartFile imageFile) async {
-    final form = FormData.fromMap({'image': imageFile});
-    await _dio.post('/admin/roadways/$roadwayId/image', data: form);
-  }
-
   Future<List<Lane>> getLanes(int roadwayId) async {
     final response = await _dio.get('/admin/roadways/$roadwayId/lanes');
     return (response.data as List).map((e) => Lane.fromJson(e)).toList();
   }
 
-  Future<Lane> addLane(int roadwayId, String laneId) async {
-    final response = await _dio.post('/admin/roadways/$roadwayId/lanes', data: {
+  Future<Lane> addLane({
+    required int roadwayId,
+    required String laneId,
+    required String direction,
+    required File videoFile,
+    required File excelFile,
+  }) async {
+    final formData = FormData.fromMap({
       'lane_id': laneId,
+      'direction': direction,
+      'video': await MultipartFile.fromFile(videoFile.path,
+          filename: videoFile.path.split('/').last),
+      'excel': await MultipartFile.fromFile(excelFile.path,
+          filename: excelFile.path.split('/').last),
     });
-    return Lane.fromJson(response.data);
-  }
 
-  Future<Lane> updateLane(int laneId, String newLaneId) async {
-    final response = await _dio.put('/admin/lanes/$laneId', data: {
-      'lane_id': newLaneId,
-    });
+    final response = await _dio.post(
+      '/admin/roadways/$roadwayId/lanes',
+      data: formData,
+    );
+
     return Lane.fromJson(response.data);
   }
 
