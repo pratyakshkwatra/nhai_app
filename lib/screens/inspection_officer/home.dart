@@ -274,8 +274,9 @@ class _InspectionHomeState extends State<InspectionHome> {
               children: [
                 SizedBox(height: MediaQuery.of(context).size.height * 0.675),
                 Padding(
-                  padding:
-                       EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.height * 0.0125, vertical: MediaQuery.of(context).size.width * 0.0125),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.height * 0.0125,
+                      vertical: MediaQuery.of(context).size.width * 0.0125),
                   child: FutureBuilder(
                     future: loadAndProcessMultipleCSVs(
                       roadWays,
@@ -522,8 +523,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                                   backgroundColor: Colors.white,
                                   title: Row(
                                     children: [
-                                      Icon(Icons.logout,
-                                          color: Colors.black),
+                                      Icon(Icons.logout, color: Colors.black),
                                       SizedBox(width: 8),
                                       Text(
                                         'Confirm Logout',
@@ -600,6 +600,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                               child: Icon(
                                 Icons.logout,
                                 color: Colors.black,
+                                size: 22,
                               ),
                             ),
                           ),

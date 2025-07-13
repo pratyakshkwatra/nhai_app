@@ -912,16 +912,19 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                       ),
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _filteredRoadways.length,
-                    itemBuilder: (context, index) {
-                      final Roadway roadway = _filteredRoadways[index];
-                      return GestureDetector(
-                        onTap: () {},
-                        child: roadwayCard(roadway, index),
-                      );
-                    },
-                  ),
+                : ClipRRect(
+                  borderRadius: BorderRadiusGeometry.circular(12),
+                  child: ListView.builder(
+                      itemCount: _filteredRoadways.length,
+                      itemBuilder: (context, index) {
+                        final Roadway roadway = _filteredRoadways[index];
+                        return GestureDetector(
+                          onTap: () {},
+                          child: roadwayCard(roadway, index),
+                        );
+                      },
+                    ),
+                ),
           ),
         ],
       ),
