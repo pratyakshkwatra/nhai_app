@@ -96,7 +96,7 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
               ),
             ),
             title: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
+              margin:  EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.width * 0.0125),
               height: MediaQuery.of(context).size.height * 0.16,
               width: double.infinity,
               decoration: BoxDecoration(
@@ -147,7 +147,6 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                 AutoSizeText(
                                   roadway.roadwayId,
                                   maxLines: 1,
-                                  minFontSize: 10,
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 14,
@@ -165,11 +164,10 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                 AutoSizeText(
                                   roadway.name,
                                   maxLines: 2,
-                                  minFontSize: 12,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
-                                    fontSize: 22,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.bold,
                                     shadows: const [
                                       Shadow(
@@ -182,6 +180,9 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                 ),
                               ],
                             ),
+                          ),
+                           SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.00675,
                           ),
                           Row(
                             children: [
@@ -212,7 +213,7 @@ class _RoadwaysOfficerState extends State<RoadwaysOfficer> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                               SizedBox(width: MediaQuery.of(context).size.width * 0.0125),
                               AnimatedRotation(
                                 turns: isExpanded ? 0.25 : 0.0,
                                 duration: const Duration(milliseconds: 500),

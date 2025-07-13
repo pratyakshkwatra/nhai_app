@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,8 +33,9 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
   late TextEditingController _usernameController;
   final TextEditingController _passwordController = TextEditingController();
   File? _newProfileImage;
+  Uint8List? _webImageBytes;
+  String? _webImageName;
   bool _isLoading = false;
-  final bool _isLoadingDelete = false;
 
   @override
   void initState() {
@@ -45,9 +48,17 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() {
-        _newProfileImage = File(image.path);
-      });
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _webImageBytes = bytes;
+          _webImageName = image.name;
+        });
+      } else {
+        setState(() {
+          _newProfileImage = File(image.path);
+        });
+      }
     }
   }
 
@@ -78,7 +89,10 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
         widget.inspectionOfficer.id,
         _usernameController.text.isNotEmpty ? _usernameController.text : null,
         _passwordController.text.isNotEmpty ? _passwordController.text : null,
-        _newProfileImage,
+        kIsWeb ? _webImageBytes : _newProfileImage,
+        fileName: _webImageName,
+        onProgress: (sent, total) {
+        },
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -88,8 +102,8 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
           ),
         );
         Navigator.pop(context);
@@ -103,8 +117,8 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -140,16 +154,19 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
                     child: CircleAvatar(
                       radius: 48,
                       backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _newProfileImage != null
-                          ? FileImage(_newProfileImage!)
-                          : (currentProfilePic != ""
-                              ? NetworkImage(currentProfilePic)
-                              : null) as ImageProvider?,
-                      child:
-                          (_newProfileImage == null && currentProfilePic == "")
-                              ? const Icon(Icons.person,
-                                  size: 48, color: Colors.black)
-                              : null,
+                      backgroundImage: _webImageBytes != null
+                          ? MemoryImage(_webImageBytes!)
+                          : _newProfileImage != null
+                              ? FileImage(_newProfileImage!)
+                              : (currentProfilePic != ""
+                                  ? NetworkImage(currentProfilePic)
+                                  : null) as ImageProvider?,
+                      child: (_newProfileImage == null &&
+                              _webImageBytes == null &&
+                              currentProfilePic == "")
+                          ? const Icon(Icons.person,
+                              size: 48, color: Colors.black)
+                          : null,
                     ),
                   ),
                   Positioned(
@@ -294,7 +311,7 @@ class _RoundedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onPressed == null ? color.withValues(alpha: 0.6) : color,
+      color: onPressed == null ? color.withValues(alpha: 153) : color,
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(

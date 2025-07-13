@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:better_player_enhanced/better_player.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:chewie/chewie.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'package:nhai_app/models/survey_frame.dart';
 import 'package:nhai_app/models/warning.dart';
 import 'package:nhai_app/screens/warnings.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
+import 'package:video_player/video_player.dart';
 import 'package:latlong2/latlong.dart';
 
 class SurveyVehicleDataScreen extends StatefulWidget {
@@ -47,13 +49,16 @@ final List<double> areaValues = [];
 
 final List<Warning> warnings = [];
 
+VideoPlayerController? videoPlayerController;
+
+ChewieController? chewieController;
+
+Chewie? playerWidget;
 late List<SurveyFrame> processedFrames;
 int previousFrameIndex = 0;
-Widget? playerWidget;
 
 class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
     with TickerProviderStateMixin {
-  late BetterPlayerController videoPlayerController;
   Duration endDuration = Duration.zero;
   bool videoPaused = true;
   late final AnimatedMapController animatedMapController;
@@ -68,57 +73,68 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
 
   @override
   void initState() {
+    super.initState();
     warnings.clear();
     trackPoints.clear();
     polyLines.clear();
     animatedMapController = AnimatedMapController(vsync: this);
-    BetterPlayerDataSource betterPlayerDataSource = BetterPlayerDataSource(
-      BetterPlayerDataSourceType.network,
-      widget.videoPath,
-      cacheConfiguration: BetterPlayerCacheConfiguration(
-        useCache: true,
-        preCacheSize: 25 * 1024 * 1024,
-        maxCacheSize: 25 * 1024 * 1024,
-        maxCacheFileSize: 25 * 1024 * 1024,
+    videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoPath),
+    );
+    chewieController = ChewieController(
+      videoPlayerController: videoPlayerController!,
+      autoPlay: false,
+      looping: false,
+      draggableProgressBar: false,
+      showControls: true,
+      aspectRatio: 0.52,
+      allowMuting: false,
+      allowPlaybackSpeedChanging: false,
+      showOptions: false,
+      allowFullScreen: true,
+      customControls: Align(
+        alignment: Alignment.bottomRight,
+        child: GestureDetector(
+          onTap: () {
+            if (chewieController!.isFullScreen) {
+              chewieController!.exitFullScreen();
+            } else {
+              chewieController!.enterFullScreen();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8, right: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.fullscreen,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+          ),
+        ),
       ),
     );
 
-    videoPlayerController = BetterPlayerController(
-        BetterPlayerConfiguration(
-          aspectRatio: 0.52,
-          fit: BoxFit.cover,
-          controlsConfiguration: BetterPlayerControlsConfiguration(
-            enableAudioTracks: false,
-            enableFullscreen: true,
-            enableMute: true,
-            enableOverflowMenu: false,
-            enablePip: false,
-            enablePlayPause: true,
-            enablePlaybackSpeed: false,
-            enableProgressBar: false,
-            enableProgressBarDrag: false,
-            enableProgressText: false,
-            enableQualities: false,
-            enableRetry: false,
-            enableSkips: true,
-            enableSubtitles: false,
-            iconsColor: Colors.white,
-            showControls: true,
-            showControlsOnInitialize: false,
-          ),
-        ),
-        betterPlayerDataSource: betterPlayerDataSource);
-
-    playerWidget = BetterPlayer(
-      controller: videoPlayerController,
+    playerWidget = Chewie(
+      controller: chewieController!,
     );
 
-    super.initState();
+    videoPlayerController!.initialize().then((_) {
+      setState(() {
+        endDuration = videoPlayerController!.value.duration;
+      });
+    });
   }
 
   @override
   void dispose() {
-    videoPlayerController.dispose();
+    videoPlayerController!.dispose();
+    chewieController!.dispose();
     animatedMapController.dispose();
 
     super.dispose();
@@ -273,7 +289,10 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.0125,
+                              ),
                               valList.length == 1
                                   ? SizedBox(
                                       height:
@@ -315,7 +334,8 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                         SizedBox(
                                           width:
                                               MediaQuery.of(context).size.width,
-                                          height: 64,
+                                          height:
+                                    MediaQuery.of(context).size.height * 0.1,
                                           child: ValueListenableBuilder<String>(
                                               valueListenable: selectedChip,
                                               builder: (context, value, _) {
@@ -523,7 +543,6 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
       final ts = Duration(milliseconds: int.tryParse(row.last.toString()) ?? 0);
       final lat = double.tryParse(row[13].toString());
       final lng = double.tryParse(row[14].toString());
-
       return SurveyFrame(
         timestamp: ts,
         position: (lat != null && lng != null) ? LatLng(lat, lng) : null,
@@ -570,720 +589,706 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
     return Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-            bottom: true,
-            child: FutureBuilder<void>(
-                future: processCsv(widget.csvPath),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text("Error: ${snapshot.error}"));
-                  }
-
-                  return ValueListenableBuilder(
-                    valueListenable:
-                        videoPlayerController.videoPlayerController!,
-                    builder: (context, value, _) {
-                      if (!mounted ||
-                          videoPlayerController.videoPlayerController == null) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final position = value.position;
-                      final duration = value.duration;
-
-                      if (duration == null) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final List<SurveyFrame> frames = processedFrames;
-                      if (frames.isEmpty) {
-                        return const Text("No data available");
-                      }
-
-                      int currentFrameIndex =
-                          frames.indexWhere((f) => f.timestamp >= position);
-                      if (currentFrameIndex == -1) {
-                        currentFrameIndex = frames.length - 1;
-                      }
-
-                      if (currentFrameIndex < previousFrameIndex) {
-                        trackPoints.clear();
-                        polyLines.clear();
-                        roughnessValues.clear();
-                        rutValues.clear();
-                        crackValues.clear();
-                        areaValues.clear();
-                        warnings.clear();
-                        previousFrameIndex = 0;
-                      }
-
-                      for (int i = previousFrameIndex;
-                          i <= currentFrameIndex;
-                          i++) {
-                        final frame = frames[i];
-
-                        if (frame.position != null) {
-                          trackPoints.add(frame.position!);
-
-                          if (trackPoints.length >= 2) {
-                            polyLines.add(
-                              Polyline(
-                                strokeWidth: 8,
-                                color: ((frame.roughness! > frame.refRough!) ||
-                                        frame.rut! > frame.refRut! ||
-                                        frame.crack! > frame.refCrack! ||
-                                        frame.area! > frame.refArea!)
-                                    ? Colors.redAccent.shade200
-                                    : Colors.black,
-                                points: [
-                                  trackPoints[trackPoints.length - 2],
-                                  trackPoints.last,
-                                ],
-                              ),
-                            );
-                          }
-
-                          if (i == currentFrameIndex) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              Timer(Duration(seconds: 2), () {
-                                try {
-                                  animatedMapController.animateTo(
-                                    dest: frame.position!,
-                                    zoom: 15.0,
-                                    duration: Duration(
-                                      milliseconds: (500 /
-                                              videoPlayerController
-                                                  .videoPlayerController!
-                                                  .value
-                                                  .speed)
-                                          .round(),
-                                    ),
-                                    curve: Curves.easeInSine,
-                                  );
-                                } catch (_) {}
-                              });
-                            });
-                          }
+            child: Padding(
+              padding: kIsWeb ? EdgeInsetsGeometry.symmetric(vertical: 8) : EdgeInsetsGeometry.only(),
+              child: FutureBuilder<void>(
+                  future: processCsv(widget.csvPath),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}"));
+                    }
+                    return ValueListenableBuilder(
+                      valueListenable: videoPlayerController!,
+                      builder: (context, value, _) {
+                        final position = value.position;
+                        final duration = value.duration;
+              
+                        final List<SurveyFrame> frames = processedFrames;
+                        if (frames.isEmpty) {
+                          return const Text("No data available");
                         }
-
-                        if (frame.roughness != null) {
-                          roughnessValues.add(frame.roughness!);
+              
+                        int currentFrameIndex =
+                            frames.indexWhere((f) => f.timestamp >= position);
+                        if (currentFrameIndex == -1) {
+                          currentFrameIndex = frames.length - 1;
                         }
-                        if (frame.rut != null) rutValues.add(frame.rut!);
-                        if (frame.crack != null) crackValues.add(frame.crack!);
-                        if (frame.area != null) areaValues.add(frame.area!);
-
-                        void addWarning(ValType type, double? ref,
-                            double? value, String message) {
-                          if (ref != null && value != null && value > ref) {
-                            final warning = Warning(
-                              type,
-                              ref,
-                              value,
-                              message,
-                              frame.timestamp,
-                              false,
-                              frame.position ?? const LatLng(0, 0),
-                            );
-                            if (!warnings.contains(warning)) {
-                              warnings.add(warning);
-                            }
-                          }
+              
+                        if (currentFrameIndex < previousFrameIndex) {
+                          trackPoints.clear();
+                          polyLines.clear();
+                          roughnessValues.clear();
+                          rutValues.clear();
+                          crackValues.clear();
+                          areaValues.clear();
+                          warnings.clear();
+                          previousFrameIndex = 0;
                         }
-
-                        addWarning(ValType.ravelling, frame.refArea, frame.area,
-                            "Abnormal lane ravelling/area value detected!");
-                        addWarning(ValType.crack, frame.refCrack, frame.crack,
-                            "Abnormal lane crack value detected!");
-                        addWarning(ValType.rut, frame.refRut, frame.rut,
-                            "Abnormal lane rut value detected!");
-                        addWarning(
-                            ValType.roughness,
-                            frame.refRough,
-                            frame.roughness,
-                            "Abnormal lane roughness value detected!");
-                      }
-
-                      previousFrameIndex = currentFrameIndex;
-
-                      // if (position == duration) {
-                      //   WidgetsBinding.instance.addPostFrameCallback((_) {
-                      //     videoPlayerController!.pause();
-                      //     if (mounted && !videoPaused) {
-                      //       setState(() {
-                      //         videoPaused = true;
-                      //       });
-                      //     }
-                      //   });
-                      // }
-
-                      final frame = frames[currentFrameIndex];
-
-                      return StatefulBuilder(builder: (context, setstateInner) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.05,
-                                width: MediaQuery.of(context).size.width,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Icon(
-                                            Icons.arrow_back_ios,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        Text(
-                                          "Lane ${widget.lane}",
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        videoPlayerController.pause();
-                                        Navigator.push(context,
-                                            MaterialPageRoute(builder:
-                                                (BuildContext context) {
-                                          return WarningsPage(
-                                            warnings: warnings,
-                                            videoPath: widget.videoPath,
-                                            surveyName:
-                                                "${widget.roadWay} - ${widget.lane}",
-                                            videoPlayerController:
-                                                videoPlayerController,
-                                            polyLines: polyLines,
-                                          );
-                                        }));
-                                      },
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.redAccent,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8, horizontal: 12),
-                                          child: Stack(
-                                            clipBehavior: Clip.none,
-                                            children: [
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.warning,
-                                                    color: Colors.black,
-                                                    size: 26,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Flexible(
-                                                    child: Text(
-                                                      "Warnings",
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              Positioned(
-                                                top: -16,
-                                                left: -20,
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                          minWidth: 24,
-                                                          minHeight: 24),
-                                                ),
-                                              ),
-                                              Positioned(
-                                                top: -17,
-                                                left: -16,
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  constraints:
-                                                      const BoxConstraints(
-                                                          minWidth: 16,
-                                                          minHeight: 16),
-                                                  child: Center(
-                                                    child: Text(
-                                                      warnings
-                                                          .where((warning) =>
-                                                              !warning
-                                                                  .checkedOff)
-                                                          .length
-                                                          .toString(),
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    )
+              
+                        for (int i = previousFrameIndex;
+                            i <= currentFrameIndex;
+                            i++) {
+                          final frame = frames[i];
+              
+                          if (frame.position != null) {
+                            trackPoints.add(frame.position!);
+              
+                            if (trackPoints.length >= 2) {
+                              polyLines.add(
+                                Polyline(
+                                  strokeWidth: 8,
+                                  color: ((frame.roughness! > frame.refRough!) ||
+                                          frame.rut! > frame.refRut! ||
+                                          frame.crack! > frame.refCrack! ||
+                                          frame.area! > frame.refArea!)
+                                      ? Colors.redAccent.shade200
+                                      : Colors.black,
+                                  points: [
+                                    trackPoints[trackPoints.length - 2],
+                                    trackPoints.last,
                                   ],
                                 ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                              );
+                            }
+              
+                            if (i == currentFrameIndex) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Timer(Duration(seconds: 2), () {
+                                  try {
+                                    animatedMapController.animateTo(
+                                      dest: frame.position!,
+                                      zoom: 15.0,
+                                      duration: Duration(
+                                        milliseconds: (500 /
+                                                videoPlayerController!
+                                                    .value.playbackSpeed)
+                                            .round(),
+                                      ),
+                                      curve: Curves.easeInSine,
+                                    );
+                                  } catch (_) {}
+                                });
+                              });
+                            }
+                          }
+              
+                          if (frame.roughness != null) {
+                            roughnessValues.add(frame.roughness!);
+                          }
+                          if (frame.rut != null) rutValues.add(frame.rut!);
+                          if (frame.crack != null) crackValues.add(frame.crack!);
+                          if (frame.area != null) areaValues.add(frame.area!);
+              
+                          void addWarning(ValType type, double? ref,
+                              double? value, String message) {
+                            if (ref != null && value != null && value > ref) {
+                              final warning = Warning(
+                                type,
+                                ref,
+                                value,
+                                message,
+                                frame.timestamp,
+                                false,
+                                frame.position ?? const LatLng(0, 0),
+                              );
+                              if (!warnings.contains(warning)) {
+                                warnings.add(warning);
+                              }
+                            }
+                          }
+              
+                          addWarning(ValType.ravelling, frame.refArea, frame.area,
+                              "Abnormal lane ravelling/area value detected!");
+                          addWarning(ValType.crack, frame.refCrack, frame.crack,
+                              "Abnormal lane crack value detected!");
+                          addWarning(ValType.rut, frame.refRut, frame.rut,
+                              "Abnormal lane rut value detected!");
+                          addWarning(
+                              ValType.roughness,
+                              frame.refRough,
+                              frame.roughness,
+                              "Abnormal lane roughness value detected!");
+                        }
+              
+                        previousFrameIndex = currentFrameIndex;
+              
+                        if (position == duration) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            videoPlayerController!.pause();
+                            if (mounted && !videoPaused) {
+                              setState(() {
+                                videoPaused = true;
+                              });
+                            }
+                          });
+                        }
+              
+                        final frame = frames[currentFrameIndex];
+              
+                        return StatefulBuilder(builder: (context, setstateInner) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.05,
+                                  width: MediaQuery.of(context).size.width,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        height:
-                                            MediaQuery.of(context).size.height *
-                                                0.40,
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.5,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadiusGeometry.circular(12),
-                                          child: playerWidget,
-                                        ),
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Icon(
+                                              Icons.arrow_back_ios,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          Text(
+                                            "Lane ${widget.lane}",
+                                            style: GoogleFonts.poppins(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
                                       ),
-                                      Container(
-                                        clipBehavior: Clip.antiAlias,
-                                        height:
-                                            MediaQuery.of(context).size.height *
-                                                0.40,
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                                0.40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius:
-                                              BorderRadius.circular(18),
-                                        ),
-                                        child: FutureBuilder<String>(
-                                            future: getWorkingTileUrl(
-                                                satelliteFallbackUrls),
-                                            builder: (context, asyncSnapshot) {
-                                              if (!asyncSnapshot.hasData) {
-                                                return Shimmer(
-                                                  color: Colors.white,
-                                                  colorOpacity: 0.75,
+                                      GestureDetector(
+                                        onTap: () {
+                                          videoPlayerController!.pause();
+                                          Navigator.push(context,
+                                              MaterialPageRoute(builder:
+                                                  (BuildContext context) {
+                                            return WarningsPage(
+                                              warnings: warnings,
+                                              videoPath: widget.videoPath,
+                                              surveyName:
+                                                  "${widget.roadWay} - ${widget.lane}",
+                                              polyLines: polyLines,
+                                            );
+                                          }));
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Padding(
+                                            padding:  EdgeInsets.symmetric(
+                                                vertical: 
+                                      MediaQuery.of(context).size.width * 0.0125, horizontal:
+                                      MediaQuery.of(context).size.height * 0.0125,),
+                                            child: Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    FittedBox(
+                                                      fit: BoxFit.contain,
+                                                      child: Icon(
+                                                        Icons.warning,
+                                                        color: Colors.black,
+                                                        size: 26,
+                                                      ),
+                                                    ),
+                                                     SizedBox(width: 
+                                      MediaQuery.of(context).size.width * 0.025,),
+                                                    Flexible(
+                                                      child: AutoSizeText(
+                                                        "Warnings",
+                                                        maxLines: 1,
+                                                        
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Positioned(
+                                                  top: -16,
+                                                  left: -20,
                                                   child: Container(
-                                                    color: Colors.grey.shade300,
-                                                  ),
-                                                );
-                                              }
-                                              return FlutterMap(
-                                                mapController:
-                                                    animatedMapController
-                                                        .mapController,
-                                                options: MapOptions(
-                                                  initialCenter: trackPoints
-                                                          .isEmpty
-                                                      ? LatLng(
-                                                          26.36114, 76.25048)
-                                                      : trackPoints.last,
-                                                  minZoom: 1,
-                                                  maxZoom: 18,
-                                                  initialZoom: 18,
-                                                  interactionOptions:
-                                                      InteractionOptions(
-                                                    flags: InteractiveFlag.all,
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minWidth: 24,
+                                                            minHeight: 24),
                                                   ),
                                                 ),
-                                                children: [
-                                                  TileLayer(
-                                                    urlTemplate:
-                                                        asyncSnapshot.data,
-                                                    userAgentPackageName:
-                                                        'com.example.nhai_app',
-                                                    subdomains: ["a", "b", "c"],
-                                                    tileProvider: kIsWeb
-                                                        ? null
-                                                        : tileProvider,
-                                                  ),
-                                                  PolylineLayer(
-                                                    polylines: polyLines,
-                                                  ),
-                                                  MarkerLayer(
-                                                    markers: [
-                                                      if (trackPoints
-                                                          .isNotEmpty)
-                                                        Marker(
-                                                          point:
-                                                              trackPoints.last,
-                                                          width: 64,
-                                                          height: 64,
-                                                          rotate: true,
-                                                          child: Image.asset(
-                                                              'assets/map_car.png'),
+                                                Positioned(
+                                                  top: -17,
+                                                  left: -16,
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(4),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minWidth: 16,
+                                                            minHeight: 16),
+                                                    child: Center(
+                                                      child: Text(
+                                                        warnings
+                                                            .where((warning) =>
+                                                                !warning
+                                                                    .checkedOff)
+                                                            .length
+                                                            .toString(),
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                    ],
+                                                      ),
+                                                    ),
                                                   ),
-                                                ],
-                                              );
-                                            }),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                       )
                                     ],
                                   ),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  Table(
-                                    columnWidths: const {
-                                      0: FlexColumnWidth(4),
-                                      1: FlexColumnWidth(3),
-                                      2: FlexColumnWidth(3),
-                                    },
-                                    defaultVerticalAlignment:
-                                        TableCellVerticalAlignment.middle,
-                                    children: [
-                                      _buildTableHeader(
-                                          'Type', 'Value', 'Limit'),
-                                      _buildTableRow(
-                                        'Chn',
-                                        [],
-                                        frame.timestamp.inMilliseconds
-                                            .toString(),
-                                        'N.A.',
-                                      ),
-                                      _buildTableRow(
-                                        'Roughness',
-                                        roughnessValues,
-                                        (frame.roughness != null &&
-                                                frame.refRough != null)
-                                            ? '${frame.roughness!.toStringAsFixed(2)} ${(frame.roughness! > frame.refRough!) ? '❌' : '✅'}'
-                                            : 'N.A.',
-                                        frame.refRough?.toStringAsFixed(2) ??
-                                            'N.A.',
-                                      ),
-                                      _buildTableRow(
-                                        'Rut Depth',
-                                        rutValues,
-                                        (frame.rut != null &&
-                                                frame.refRut != null)
-                                            ? '${frame.rut!.toStringAsFixed(2)} ${(frame.rut! > frame.refRut!) ? '❌' : '✅'}'
-                                            : 'N.A.',
-                                        frame.refRut?.toStringAsFixed(2) ??
-                                            'N.A.',
-                                      ),
-                                      _buildTableRow(
-                                        'Crack Area',
-                                        crackValues,
-                                        (frame.crack != null &&
-                                                frame.refCrack != null)
-                                            ? '${frame.crack!.toStringAsFixed(2)} ${(frame.crack! > frame.refCrack!) ? '❌' : '✅'}'
-                                            : 'N.A.',
-                                        frame.refCrack?.toStringAsFixed(2) ??
-                                            'N.A.',
-                                      ),
-                                      _buildTableRow(
-                                        'Lane Area',
-                                        areaValues,
-                                        (frame.area != null &&
-                                                frame.refArea != null)
-                                            ? '${frame.area!.toStringAsFixed(2)} ${(frame.area! > frame.refArea!) ? '❌' : '✅'}'
-                                            : 'N.A.',
-                                        frame.refArea?.toStringAsFixed(2) ??
-                                            'N.A.',
-                                        last: true,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.115,
-                                width: MediaQuery.of(context).size.width,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
                                 ),
-                                child: Column(
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.00625,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              formatDuration(position),
-                                              style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 12),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Expanded(
-                                              child: SliderTheme(
-                                                data: SliderTheme.of(context)
-                                                    .copyWith(
-                                                  trackHeight: 6,
-                                                  inactiveTrackColor:
-                                                      Colors.grey.shade200,
-                                                  activeTrackColor:
-                                                      Colors.redAccent,
-                                                  thumbColor: Colors.redAccent,
-                                                  overlayColor:
-                                                      Colors.redAccent,
-                                                  thumbShape:
-                                                      RoundSliderThumbShape(
-                                                          enabledThumbRadius:
-                                                              6),
-                                                  overlayShape:
-                                                      RoundSliderOverlayShape(
-                                                          overlayRadius: 12),
-                                                ),
-                                                child: Slider(
-                                                  min: 0,
-                                                  max: duration!.inSeconds
-                                                      .toDouble()
-                                                      .clamp(
-                                                          1, double.infinity),
-                                                  value: position.inSeconds
-                                                      .clamp(
-                                                          0, duration.inSeconds)
-                                                      .toDouble(),
-                                                  onChanged: (value) {
-                                                    final newDuration =
-                                                        Duration(
-                                                            seconds:
-                                                                value.toInt());
-                                                    videoPlayerController
-                                                        .seekTo(newDuration);
-                                                  },
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Text(
-                                              formatDuration(duration),
-                                              style: TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 12),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.0125,
-                                    ),
                                     Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
-                                        ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: PlaybackSpeedSelector(
-                                            controller: videoPlayerController,
+                                        Container(
+                                          height:
+                                              MediaQuery.of(context).size.height *
+                                                  0.40,
+                                          width:
+                                              MediaQuery.of(context).size.width *
+                                                  0.45,
+                                          clipBehavior: Clip.antiAlias,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(16),
                                           ),
+                                          child: playerWidget!,
                                         ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
-                                        ),
-                                        VerticalDivider(
-                                          color: Colors.grey.shade300,
-                                        ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
-                                        ),
-                                        Expanded(
-                                          flex: 10,
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              GestureDetector(
-                                                onTap: () {
-                                                  HapticFeedback.lightImpact();
-                                                  videoPlayerController.seekTo(
-                                                    (videoPlayerController
-                                                                .videoPlayerController!
-                                                                .value
-                                                                .position
-                                                                .inSeconds) >
-                                                            10
-                                                        ? videoPlayerController
-                                                                .videoPlayerController!
-                                                                .value
-                                                                .position -
-                                                            Duration(
-                                                                seconds: 10)
-                                                        : Duration(seconds: 0),
+                                        Container(
+                                          clipBehavior: Clip.antiAlias,
+                                          height:
+                                              MediaQuery.of(context).size.height *
+                                                  0.40,
+                                          width:
+                                              MediaQuery.of(context).size.width *
+                                                  0.45,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                          ),
+                                          child: FutureBuilder<String>(
+                                              future: getWorkingTileUrl(
+                                                  satelliteFallbackUrls),
+                                              builder: (context, asyncSnapshot) {
+                                                if (!asyncSnapshot.hasData) {
+                                                  return Shimmer(
+                                                    color: Colors.white,
+                                                    colorOpacity: 0.75,
+                                                    child: Container(
+                                                      color: Colors.grey.shade300,
+                                                    ),
                                                   );
-                                                },
-                                                child: Icon(
-                                                  Icons.fast_rewind,
-                                                  size: 32,
-                                                ),
-                                              ),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  HapticFeedback.mediumImpact();
-                                                  if (videoPaused) {
-                                                    setstateInner(() {
-                                                      videoPaused = false;
-                                                    });
-                                                    videoPlayerController
-                                                        .play();
-                                                  } else {
-                                                    setstateInner(() {
-                                                      videoPaused = true;
-                                                    });
-                                                    videoPlayerController
-                                                        .pause();
-                                                  }
-                                                },
-                                                child: Icon(
-                                                  videoPaused
-                                                      ? Icons.play_arrow
-                                                      : Icons.pause,
-                                                  size: 32,
-                                                ),
-                                              ),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  HapticFeedback.lightImpact();
-                                                  videoPlayerController.seekTo(
-                                                    (videoPlayerController
-                                                                    .videoPlayerController!
-                                                                    .value
-                                                                    .position
-                                                                    .inSeconds +
-                                                                10) <
-                                                            videoPlayerController
-                                                                .videoPlayerController!
-                                                                .value
-                                                                .duration!
-                                                                .inSeconds
-                                                        ? videoPlayerController
-                                                                .videoPlayerController!
-                                                                .value
-                                                                .position +
-                                                            Duration(
-                                                                seconds: 10)
-                                                        : videoPlayerController
-                                                            .videoPlayerController!
-                                                            .value
-                                                            .duration!,
-                                                  );
-                                                },
-                                                child: Icon(
-                                                  Icons.fast_forward,
-                                                  size: 32,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                                }
+                                                return FlutterMap(
+                                                  mapController:
+                                                      animatedMapController
+                                                          .mapController,
+                                                  options: MapOptions(
+                                                    initialCenter: trackPoints
+                                                            .isEmpty
+                                                        ? LatLng(
+                                                            26.36114, 76.25048)
+                                                        : trackPoints.last,
+                                                    minZoom: 1,
+                                                    maxZoom: 18,
+                                                    initialZoom: 18,
+                                                    interactionOptions:
+                                                        InteractionOptions(
+                                                      flags: InteractiveFlag.all,
+                                                    ),
+                                                  ),
+                                                  children: [
+                                                    TileLayer(
+                                                      urlTemplate:
+                                                          asyncSnapshot.data,
+                                                      userAgentPackageName:
+                                                          'com.example.nhai_app',
+                                                      subdomains: ["a", "b", "c"],
+                                                      tileProvider: tileProvider,
+                                                    ),
+                                                    PolylineLayer(
+                                                      polylines: polyLines,
+                                                    ),
+                                                    MarkerLayer(
+                                                      markers: [
+                                                        if (trackPoints
+                                                            .isNotEmpty)
+                                                          Marker(
+                                                            point:
+                                                                trackPoints.last,
+                                                            width: 64,
+                                                            height: 64,
+                                                            rotate: true,
+                                                            child: Image.asset(
+                                                                'assets/map_car.png'),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                );
+                                              }),
+                                        )
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Table(
+                                      columnWidths: const {
+                                        0: FlexColumnWidth(4),
+                                        1: FlexColumnWidth(3),
+                                        2: FlexColumnWidth(3),
+                                      },
+                                      defaultVerticalAlignment:
+                                          TableCellVerticalAlignment.middle,
+                                      children: [
+                                        _buildTableHeader(
+                                            'Type', 'Value', 'Limit'),
+                                        _buildTableRow(
+                                          'Chn',
+                                          [],
+                                          frame.timestamp.inMilliseconds
+                                              .toString(),
+                                          'N.A.',
                                         ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
+                                        _buildTableRow(
+                                          'Roughness',
+                                          roughnessValues,
+                                          (frame.roughness != null &&
+                                                  frame.refRough != null)
+                                              ? '${frame.roughness!.toStringAsFixed(2)} ${(frame.roughness! > frame.refRough!) ? '❌' : '✅'}'
+                                              : 'N.A.',
+                                          frame.refRough?.toStringAsFixed(2) ??
+                                              'N.A.',
                                         ),
-                                        VerticalDivider(
-                                          color: Colors.grey.shade300,
+                                        _buildTableRow(
+                                          'Rut Depth',
+                                          rutValues,
+                                          (frame.rut != null &&
+                                                  frame.refRut != null)
+                                              ? '${frame.rut!.toStringAsFixed(2)} ${(frame.rut! > frame.refRut!) ? '❌' : '✅'}'
+                                              : 'N.A.',
+                                          frame.refRut?.toStringAsFixed(2) ??
+                                              'N.A.',
                                         ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
+                                        _buildTableRow(
+                                          'Crack Area',
+                                          crackValues,
+                                          (frame.crack != null &&
+                                                  frame.refCrack != null)
+                                              ? '${frame.crack!.toStringAsFixed(2)} ${(frame.crack! > frame.refCrack!) ? '❌' : '✅'}'
+                                              : 'N.A.',
+                                          frame.refCrack?.toStringAsFixed(2) ??
+                                              'N.A.',
                                         ),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              BlinkingIcon(),
-                                              SizedBox(
-                                                width: 6,
-                                              ),
-                                              Text(
-                                                "Live",
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Expanded(
-                                          flex: 1,
-                                          child: SizedBox(),
+                                        _buildTableRow(
+                                          'Lane Area',
+                                          areaValues,
+                                          (frame.area != null &&
+                                                  frame.refArea != null)
+                                              ? '${frame.area!.toStringAsFixed(2)} ${(frame.area! > frame.refArea!) ? '❌' : '✅'}'
+                                              : 'N.A.',
+                                          frame.refArea?.toStringAsFixed(2) ??
+                                              'N.A.',
+                                          last: true,
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      });
-                    },
-                  );
-                })));
+                                Container(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.115,
+                                  width: MediaQuery.of(context).size.width,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                                0.00625,
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                formatDuration(position),
+                                                style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 12),
+                                              ),
+                                              SizedBox(width: 
+                                      MediaQuery.of(context).size.width * 0.0125,),
+                                              Expanded(
+                                                child: SliderTheme(
+                                                  data: SliderTheme.of(context)
+                                                      .copyWith(
+                                                    trackHeight: 6,
+                                                    inactiveTrackColor:
+                                                        Colors.grey.shade200,
+                                                    activeTrackColor:
+                                                        Colors.redAccent,
+                                                    thumbColor: Colors.redAccent,
+                                                    overlayColor:
+                                                        Colors.redAccent,
+                                                    thumbShape:
+                                                        RoundSliderThumbShape(
+                                                            enabledThumbRadius:
+                                                                6),
+                                                    overlayShape:
+                                                        RoundSliderOverlayShape(
+                                                            overlayRadius: 12),
+                                                  ),
+                                                  child: Slider(
+                                                    min: 0,
+                                                    max: duration.inSeconds
+                                                        .toDouble()
+                                                        .clamp(
+                                                            1, double.infinity),
+                                                    value: position.inSeconds
+                                                        .clamp(
+                                                            0, duration.inSeconds)
+                                                        .toDouble(),
+                                                    onChanged: (value) {
+                                                      final newDuration =
+                                                          Duration(
+                                                              seconds:
+                                                                  value.toInt());
+                                                      videoPlayerController!
+                                                          .seekTo(newDuration);
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(width: 
+                                      MediaQuery.of(context).size.height * 0.0125,),
+                                              Text(
+                                                formatDuration(duration),
+                                                style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 12),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                                0.0125,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                          Expanded(
+                                            flex: 5,
+                                            child: PlaybackSpeedSelector(
+                                              controller: videoPlayerController!,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                          VerticalDivider(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                          Expanded(
+                                            flex: 10,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    HapticFeedback.lightImpact();
+                                                    videoPlayerController!.seekTo(
+                                                      (videoPlayerController!
+                                                                  .value
+                                                                  .position
+                                                                  .inSeconds) >
+                                                              10
+                                                          ? videoPlayerController!
+                                                                  .value
+                                                                  .position -
+                                                              Duration(
+                                                                  seconds: 10)
+                                                          : Duration(seconds: 0),
+                                                    );
+                                                  },
+                                                  child: Icon(
+                                                    Icons.fast_rewind,
+                                                    size: 32,
+                                                  ),
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    HapticFeedback.mediumImpact();
+                                                    if (videoPaused) {
+                                                      setstateInner(() {
+                                                        videoPaused = false;
+                                                      });
+                                                      videoPlayerController!
+                                                          .play();
+                                                    } else {
+                                                      setstateInner(() {
+                                                        videoPaused = true;
+                                                      });
+                                                      videoPlayerController!
+                                                          .pause();
+                                                    }
+                                                  },
+                                                  child: Icon(
+                                                    videoPaused
+                                                        ? Icons.play_arrow
+                                                        : Icons.pause,
+                                                    size: 32,
+                                                  ),
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    HapticFeedback.lightImpact();
+                                                    videoPlayerController!.seekTo(
+                                                      (videoPlayerController!
+                                                                      .value
+                                                                      .position
+                                                                      .inSeconds +
+                                                                  10) <
+                                                              videoPlayerController!
+                                                                  .value
+                                                                  .duration
+                                                                  .inSeconds
+                                                          ? videoPlayerController!
+                                                                  .value
+                                                                  .position +
+                                                              Duration(
+                                                                  seconds: 10)
+                                                          : videoPlayerController!
+                                                              .value.duration,
+                                                    );
+                                                  },
+                                                  child: Icon(
+                                                    Icons.fast_forward,
+                                                    size: 32,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                          VerticalDivider(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                          Expanded(
+                                            flex: 5,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                BlinkingIcon(),
+                                                SizedBox(
+                                                  width: 
+                                      MediaQuery.of(context).size.height * 0.00675,
+                                                ),
+                                                Text(
+                                                  "Live",
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        });
+                      },
+                    );
+                  }),
+            )));
   }
 }

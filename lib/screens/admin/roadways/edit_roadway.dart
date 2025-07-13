@@ -1,10 +1,13 @@
-import 'dart:io';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/roadway.dart';
+import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 class EditRoadwayScreen extends StatefulWidget {
   final Roadway roadway;
@@ -17,7 +20,7 @@ class EditRoadwayScreen extends StatefulWidget {
 class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
   final TextEditingController _roadwayIdController = TextEditingController();
   final TextEditingController _roadwayNameController = TextEditingController();
-  File? _roadwayImage;
+  XFile? _roadwayImage;
   bool _isUpdating = false;
 
   @override
@@ -32,7 +35,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
-        _roadwayImage = File(picked.path);
+        _roadwayImage = picked;
       });
     }
   }
@@ -53,11 +56,31 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
 
     setState(() => _isUpdating = true);
     try {
+      MultipartFile? imageToUpload;
+      if (_roadwayImage != null) {
+        if (kIsWeb) {
+          final bytes = await _roadwayImage!.readAsBytes();
+          imageToUpload = MultipartFile.fromBytes(
+            bytes,
+            filename: _roadwayImage!.name,
+            contentType: MediaType("image", "jpeg"),
+          );
+        } else {
+          imageToUpload = await MultipartFile.fromFile(
+            _roadwayImage!.path,
+            filename: _roadwayImage!.name,
+            contentType: MediaType("image", "jpeg"),
+          );
+        }
+      }
+
       await AdminApi().updateRoadway(
         widget.roadway.id,
         _roadwayNameController.text,
         _roadwayIdController.text,
-        imageFile: _roadwayImage,
+        imageFile: imageToUpload,
+        onSendProgress: (sent, total) {
+        },
       );
 
       if (mounted) {
@@ -70,7 +93,6 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
-
         Navigator.pop(context, true);
       }
     } on APIException catch (e) {
@@ -119,7 +141,12 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
                         borderRadius: BorderRadius.circular(16),
                         image: _roadwayImage != null
                             ? DecorationImage(
-                                image: FileImage(_roadwayImage!),
+                                image: kIsWeb
+                                    ? NetworkImage(_roadwayImage!.path)
+                                        as ImageProvider
+                                    : FileImage(
+                                        io.File(_roadwayImage!.path),
+                                      ),
                                 fit: BoxFit.cover,
                               )
                             : (widget.roadway.imagePath != null &&
@@ -135,7 +162,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
                       child: _roadwayImage == null &&
                               (widget.roadway.imagePath == null ||
                                   widget.roadway.imagePath!.isEmpty)
-                          ? Icon(Icons.add_photo_alternate,
+                          ? const Icon(Icons.add_photo_alternate,
                               color: Colors.black54, size: 48)
                           : null,
                     ),
@@ -145,7 +172,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.withValues(alpha: 0.75),
+                          color: Colors.redAccent.withValues(alpha:  0.75),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -240,7 +267,7 @@ class _RoundedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onPressed == null ? color.withValues(alpha: 0.6) : color,
+      color: onPressed == null ? color.withValues(alpha:  0.6) : color,
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(

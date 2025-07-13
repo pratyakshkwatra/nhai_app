@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,8 +12,11 @@ import 'package:nhai_app/services/auth.dart';
 class AddRoadwayScreen extends StatefulWidget {
   final AuthService authService;
   final User user;
-  const AddRoadwayScreen(
-      {super.key, required this.authService, required this.user});
+  const AddRoadwayScreen({
+    super.key,
+    required this.authService,
+    required this.user,
+  });
 
   @override
   State<AddRoadwayScreen> createState() => _AddRoadwayScreenState();
@@ -20,23 +25,39 @@ class AddRoadwayScreen extends StatefulWidget {
 class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
   final TextEditingController _roadwayIdController = TextEditingController();
   final TextEditingController _roadwayNameController = TextEditingController();
+
   File? _roadwayImage;
+  Uint8List? _webImageBytes;
+  String? _webImageName;
+
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
-      setState(() {
-        _roadwayImage = File(picked.path);
-      });
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _webImageBytes = bytes;
+          _webImageName = picked.name;
+          _roadwayImage = null;
+        });
+      } else {
+        setState(() {
+          _roadwayImage = File(picked.path);
+          _webImageBytes = null;
+          _webImageName = null;
+        });
+      }
     }
   }
 
   Future<void> _submit() async {
     if (_roadwayIdController.text.isEmpty ||
         _roadwayNameController.text.isEmpty ||
-        _roadwayImage == null) {
+        (_roadwayImage == null && _webImageBytes == null)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("All fields and image are required",
             style: GoogleFonts.poppins(color: Colors.white)),
@@ -49,11 +70,15 @@ class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
     }
 
     setState(() => _isLoading = true);
+
     try {
       await AdminApi().createRoadway(
         _roadwayIdController.text,
         _roadwayNameController.text,
-        _roadwayImage!,
+        imageFile: _roadwayImage,
+        webBytes: _webImageBytes,
+        webFileName: _webImageName,
+        onProgress: (sent, total) {},
       );
 
       if (mounted) {
@@ -111,16 +136,18 @@ class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(16),
-                    image: _roadwayImage != null
+                    image: (_roadwayImage != null || _webImageBytes != null)
                         ? DecorationImage(
-                            image: FileImage(_roadwayImage!),
+                            image: _roadwayImage != null
+                                ? FileImage(_roadwayImage!)
+                                : MemoryImage(_webImageBytes!) as ImageProvider,
                             fit: BoxFit.cover,
                           )
                         : null,
                   ),
                   alignment: Alignment.center,
-                  child: _roadwayImage == null
-                      ? Icon(Icons.add_photo_alternate,
+                  child: (_roadwayImage == null && _webImageBytes == null)
+                      ? const Icon(Icons.add_photo_alternate,
                           color: Colors.black54, size: 48)
                       : null,
                 ),

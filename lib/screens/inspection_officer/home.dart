@@ -275,7 +275,7 @@ class _InspectionHomeState extends State<InspectionHome> {
                 SizedBox(height: MediaQuery.of(context).size.height * 0.675),
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                       EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.height * 0.0125, vertical: MediaQuery.of(context).size.width * 0.0125),
                   child: FutureBuilder(
                     future: loadAndProcessMultipleCSVs(
                       roadWays,
@@ -337,8 +337,8 @@ class _InspectionHomeState extends State<InspectionHome> {
                                     children: [
                                       AutoSizeText(
                                         roadWays.isNotEmpty
-                                            ? "Lane Length: ${animatedDistance.toStringAsFixed(2)} KM"
-                                            : "Total Distance: ${animatedDistance.toStringAsFixed(2)} KM",
+                                            ? "Highway Length: ${animatedDistance.toStringAsFixed(2)} KM"
+                                            : "Cumulative Distance: ${animatedDistance.toStringAsFixed(2)} KM",
                                         style: GoogleFonts.poppins(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -350,8 +350,8 @@ class _InspectionHomeState extends State<InspectionHome> {
                                         children: [
                                           AutoSizeText(
                                             roadWays.isNotEmpty
-                                                ? "Lane Health:"
-                                                : "Highway Health:",
+                                                ? "Highway Health:"
+                                                : "Cumulative Health:",
                                             style: GoogleFonts.poppins(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,

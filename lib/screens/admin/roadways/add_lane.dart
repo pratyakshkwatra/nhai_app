@@ -1,11 +1,13 @@
+import 'dart:io' as io;
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/user.dart';
 import 'package:nhai_app/services/auth.dart';
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 
 class AddLane extends StatefulWidget {
   final AuthService authService;
@@ -25,13 +27,38 @@ class AddLane extends StatefulWidget {
 
 class _AddLaneState extends State<AddLane> {
   bool _isLoading = false;
-  File? _videoFile;
-  File? _excelFile;
+  PlatformFile? _videoFile;
+  PlatformFile? _excelFile;
 
   String _selectedDirection = 'L';
   String _selectedLaneNumber = '1';
   bool _pickingFile = false;
   double _uploadProgress = 0.0;
+
+  Future<void> _pickFile(bool isVideo) async {
+    if (_pickingFile) return;
+    setState(() => _pickingFile = true);
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: isVideo ? FileType.video : FileType.custom,
+        allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
+        withData: kIsWeb,
+      );
+
+      if (result != null) {
+        setState(() {
+          if (isVideo) {
+            _videoFile = result.files.single;
+          } else {
+            _excelFile = result.files.single;
+          }
+        });
+      }
+    } finally {
+      setState(() => _pickingFile = false);
+    }
+  }
 
   Future<void> _submit() async {
     final laneId = "$_selectedDirection$_selectedLaneNumber";
@@ -56,12 +83,35 @@ class _AddLaneState extends State<AddLane> {
     });
 
     try {
+      MultipartFile videoMultipart;
+      MultipartFile excelMultipart;
+
+      if (kIsWeb) {
+        videoMultipart = MultipartFile.fromBytes(
+          _videoFile!.bytes!,
+          filename: _videoFile!.name,
+        );
+        excelMultipart = MultipartFile.fromBytes(
+          _excelFile!.bytes!,
+          filename: _excelFile!.name,
+        );
+      } else {
+        videoMultipart = await MultipartFile.fromFile(
+          _videoFile!.path!,
+          filename: _videoFile!.name,
+        );
+        excelMultipart = await MultipartFile.fromFile(
+          _excelFile!.path!,
+          filename: _excelFile!.name,
+        );
+      }
+
       await AdminApi().addLane(
         roadwayId: widget.roadwayId,
         laneId: laneId,
         direction: _selectedDirection,
-        videoFile: _videoFile!,
-        excelFile: _excelFile!,
+        videoFile: videoMultipart,
+        excelFile: excelMultipart,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -93,31 +143,6 @@ class _AddLaneState extends State<AddLane> {
       }
     } finally {
       setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _pickFile(bool isVideo) async {
-    if (!_pickingFile) {
-      setState(() => _pickingFile = true);
-
-      try {
-        final result = await FilePicker.platform.pickFiles(
-          type: isVideo ? FileType.video : FileType.custom,
-          allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
-        );
-
-        if (result != null && result.files.single.path != null) {
-          setState(() {
-            if (isVideo) {
-              _videoFile = File(result.files.single.path!);
-            } else {
-              _excelFile = File(result.files.single.path!);
-            }
-          });
-        }
-      } finally {
-        setState(() => _pickingFile = false);
-      }
     }
   }
 
@@ -186,7 +211,7 @@ class _AddLaneState extends State<AddLane> {
                       alignment: Alignment.center,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadiusGeometry.circular(12),
+                          borderRadius: BorderRadius.circular(12),
                           child: LinearProgressIndicator(
                             value: _uploadProgress,
                             color: Colors.redAccent,
@@ -296,7 +321,7 @@ class _RoundedButton extends StatelessWidget {
 
 class _FilePickerCard extends StatelessWidget {
   final String label;
-  final File? file;
+  final PlatformFile? file;
   final IconData icon;
   final String fileType;
   final VoidCallback onTap;
@@ -317,8 +342,8 @@ class _FilePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fileName = file?.path.split('/').last;
-    final fileSize = file != null ? _formatBytes(file!.lengthSync()) : null;
+    final fileName = file?.name;
+    final fileSize = file?.size != null ? _formatBytes(file!.size) : null;
 
     return InkWell(
       onTap: onTap,

@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'dart:io';
-import 'package:better_player_enhanced/better_player.dart';
+
+import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,21 +13,19 @@ import 'package:nhai_app/models/warning.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
+import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 
 class WarningsPage extends StatefulWidget {
   final List<Warning> warnings;
   final String videoPath;
   final String surveyName;
-  final BetterPlayerController videoPlayerController;
   final List<Polyline> polyLines;
-
   const WarningsPage({
     super.key,
     required this.warnings,
     required this.videoPath,
     required this.surveyName,
-    required this.videoPlayerController,
     required this.polyLines,
   });
 
@@ -35,171 +33,147 @@ class WarningsPage extends StatefulWidget {
   State<WarningsPage> createState() => _WarningsPageState();
 }
 
+VideoPlayerController? videoPlayerController;
+
+ChewieController? chewieController;
+
+Chewie? playerWidget;
+
 class _WarningsPageState extends State<WarningsPage> {
-  BetterPlayerController? _videoPlayerController;
   Duration endDuration = Duration.zero;
   late final MapController _mapController;
 
   @override
   void initState() {
     super.initState();
+    videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoPath),
+    );
+    chewieController = ChewieController(
+      videoPlayerController: videoPlayerController!,
+      autoPlay: false,
+      looping: false,
+      draggableProgressBar: true,
+      showControls: true,
+      aspectRatio: 0.52,
+      allowMuting: true,
+      allowPlaybackSpeedChanging: false,
+      showOptions: true,
+      allowFullScreen: true,
+    );
+
+    playerWidget = Chewie(
+      controller: chewieController!,
+    );
+
+    videoPlayerController!.initialize().then((_) {
+      setState(() {
+        endDuration = videoPlayerController!.value.duration;
+      });
+    });
     _mapController = MapController();
   }
 
   @override
   void dispose() {
+    videoPlayerController!.dispose();
+    chewieController!.dispose();
+
     super.dispose();
   }
 
-  Future<void> initializeVideoPlayer(Duration startDuration) async {
-    if (_videoPlayerController != null) {
-      _videoPlayerController!.seekTo(startDuration);
-      return;
+  LatLng getCenter(List<Warning> warnings) {
+    if (warnings.isEmpty) return LatLng(28.5428, 77.1555);
+
+    double totalLat = 0;
+    double totalLng = 0;
+
+    for (var warning in warnings) {
+      totalLat += warning.cordinates.latitude;
+      totalLng += warning.cordinates.longitude;
     }
 
-    final dataSource = BetterPlayerDataSource(
-      BetterPlayerDataSourceType.network,
-      widget.videoPath,
-      cacheConfiguration: BetterPlayerCacheConfiguration(
-        useCache: true,
-        preCacheSize: 25 * 1024 * 1024,
-        maxCacheSize: 25 * 1024 * 1024,
-        maxCacheFileSize: 25 * 1024 * 1024,
-      ),
+    return LatLng(
+      totalLat / warnings.length,
+      totalLng / warnings.length,
     );
-
-    final controller = BetterPlayerController(
-      BetterPlayerConfiguration(
-        aspectRatio: 0.52,
-        fit: BoxFit.cover,
-        controlsConfiguration: const BetterPlayerControlsConfiguration(
-          showControls: true,
-          showControlsOnInitialize: false,
-        ),
-      ),
-      betterPlayerDataSource: dataSource,
-    );
-
-    final completer = Completer<void>();
-
-    controller.addEventsListener((event) async {
-      if (event.betterPlayerEventType == BetterPlayerEventType.initialized) {
-        await controller.seekTo(startDuration);
-        completer.complete();
-      }
-    });
-
-    _videoPlayerController = controller;
-
-    return completer.future;
   }
 
-  void showWarningPlayerDialog(BuildContext context, Duration startDuration) {
-    final dataSource = BetterPlayerDataSource(
-      BetterPlayerDataSourceType.network,
-      widget.videoPath,
-      cacheConfiguration: BetterPlayerCacheConfiguration(
-        useCache: true,
-        preCacheSize: 10 * 1024 * 1024,
-        maxCacheSize: 10 * 1024 * 1024,
-        maxCacheFileSize: 10 * 1024 * 1024,
-      ),
-    );
-
-    final controller = BetterPlayerController(
-      BetterPlayerConfiguration(
-        aspectRatio: 0.52,
-        fit: BoxFit.cover,
-        autoPlay: true,
-        controlsConfiguration: const BetterPlayerControlsConfiguration(
-          showControls: true,
-          showControlsOnInitialize: false,
-        ),
-      ),
-      betterPlayerDataSource: dataSource,
-    );
-
-    controller.setupDataSource(dataSource).then((_) {
-      controller.seekTo(startDuration);
-    });
-
+  void showWarningPlayerDialog(BuildContext context, Widget playerWidget) {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return PopScope(
-          canPop: true,
-          onPopInvokedWithResult: (val, val2) async {
-            controller.pause();
-            controller.dispose();
-            return;
-          },
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Warning Playback",
-                            style: GoogleFonts.poppins(
-                                fontSize: 22, fontWeight: FontWeight.w600)),
-                        GestureDetector(
-                          onTap: () {
-                            controller.pause();
-                            controller.dispose();
-                            Navigator.of(context).pop();
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(Icons.close,
-                                color: Colors.white, size: 24),
-                          ),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Container(
+                height: MediaQuery.of(context).size.height * 0.8,
+                width: MediaQuery.of(context).size.width,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: BetterPlayer(controller: controller),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Warning Playback",
+                            style: GoogleFonts.poppins(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.close,
+                                  color: Colors.white, size: 24),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: playerWidget,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              );
+            },
           ),
         );
       },
-    ).then((_) {
-      controller.pause();
-      controller.dispose();
-    });
+    );
   }
 
   String formatDuration(Duration duration) {
@@ -324,10 +298,11 @@ class _WarningsPageState extends State<WarningsPage> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          showWarningPlayerDialog(
-                            context,
-                            warning.duration,
-                          );
+                          videoPlayerController!.seekTo(Duration(
+                            milliseconds:
+                                warning.duration.inMilliseconds - 5000,
+                          ));
+                          showWarningPlayerDialog(context, playerWidget!);
                         });
                       },
                       icon: const Icon(Icons.play_circle, color: Colors.white),
@@ -360,7 +335,6 @@ class _WarningsPageState extends State<WarningsPage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            duration: Duration(seconds: 5),
                           ),
                         );
 
@@ -509,23 +483,6 @@ Location: https://www.google.com/maps/search/?api=1&query=${warning.cordinates.l
           ),
         );
       },
-    );
-  }
-
-  LatLng getCenter(List<Warning> warnings) {
-    if (warnings.isEmpty) return LatLng(28.5428, 77.1555);
-
-    double totalLat = 0;
-    double totalLng = 0;
-
-    for (var warning in warnings) {
-      totalLat += warning.cordinates.latitude;
-      totalLng += warning.cordinates.longitude;
-    }
-
-    return LatLng(
-      totalLat / warnings.length,
-      totalLng / warnings.length,
     );
   }
 

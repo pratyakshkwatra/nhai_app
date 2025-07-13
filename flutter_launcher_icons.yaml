@@ -19,8 +19,8 @@ flutter_launcher_icons:
   # background_color_ios: "#ffffff"
 
   web:
-    generate: false
-    image_path: "path/to/image.png"
+    generate: true
+    image_path: "assets/logo.jpeg"
     background_color: "#hexcode"
     theme_color: "#hexcode"
 

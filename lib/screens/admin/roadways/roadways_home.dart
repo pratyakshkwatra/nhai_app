@@ -89,7 +89,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
               ),
             ),
             title: Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
+              margin:  EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.00675),
               height: MediaQuery.of(context).size.height * 0.16,
               width: double.infinity,
               decoration: BoxDecoration(
@@ -140,7 +140,6 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                 AutoSizeText(
                                   roadway.roadwayId,
                                   maxLines: 1,
-                                  minFontSize: 10,
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 14,
@@ -154,12 +153,10 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                 SizedBox(height: MediaQuery.of(context).size.height * 0.00675),
                                 AutoSizeText(
                                   roadway.name,
                                   maxLines: 2,
-                                  minFontSize: 12,
-                                  overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.poppins(
                                     color: Colors.white,
                                     fontSize: 22,
@@ -176,7 +173,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
+                           SizedBox(width: MediaQuery.of(context).size.width * 0.0125),
                           PopupMenuButton<String>(
                             icon: Icon(
                               Icons.more_vert,
@@ -424,7 +421,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                         key: const ValueKey(true),
                         width: double.infinity,
                         height: MediaQuery.of(context).size.height * 0.4,
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin:  EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.0125),
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(16),
@@ -436,8 +433,8 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        padding:  EdgeInsets.symmetric(
+                            horizontal: MediaQuery.of(context).size.width * 0.025, vertical: MediaQuery.of(context).size.width * 0.0125),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -472,7 +469,7 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                         color: Colors.black54)),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                             SizedBox(height: MediaQuery.of(context).size.height * 0.0125),
                             Expanded(
                               child: StreamBuilder(
                                   stream: Stream.periodic(
