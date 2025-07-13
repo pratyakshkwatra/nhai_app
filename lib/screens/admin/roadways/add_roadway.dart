@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,19 +20,15 @@ class AddRoadwayScreen extends StatefulWidget {
 class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
   final TextEditingController _roadwayIdController = TextEditingController();
   final TextEditingController _roadwayNameController = TextEditingController();
-
-  Uint8List? _imageBytes;
-  String? _imageName;
+  File? _roadwayImage;
   bool _isLoading = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      final bytes = await picked.readAsBytes();
       setState(() {
-        _imageBytes = bytes;
-        _imageName = picked.name;
+        _roadwayImage = File(picked.path);
       });
     }
   }
@@ -40,8 +36,7 @@ class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
   Future<void> _submit() async {
     if (_roadwayIdController.text.isEmpty ||
         _roadwayNameController.text.isEmpty ||
-        _imageBytes == null ||
-        _imageName == null) {
+        _roadwayImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("All fields and image are required",
             style: GoogleFonts.poppins(color: Colors.white)),
@@ -58,8 +53,7 @@ class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
       await AdminApi().createRoadway(
         _roadwayIdController.text,
         _roadwayNameController.text,
-        _imageBytes!,
-        _imageName!,
+        _roadwayImage!,
       );
 
       if (mounted) {
@@ -117,15 +111,15 @@ class _AddRoadwayScreenState extends State<AddRoadwayScreen> {
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(16),
-                    image: _imageBytes != null
+                    image: _roadwayImage != null
                         ? DecorationImage(
-                            image: MemoryImage(_imageBytes!),
+                            image: FileImage(_roadwayImage!),
                             fit: BoxFit.cover,
                           )
                         : null,
                   ),
                   alignment: Alignment.center,
-                  child: _imageBytes == null
+                  child: _roadwayImage == null
                       ? Icon(Icons.add_photo_alternate,
                           color: Colors.black54, size: 48)
                       : null,
@@ -212,7 +206,7 @@ class _RoundedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onPressed == null ? color.withOpacity(0.6) : color,
+      color: onPressed == null ? color.withValues(alpha: 0.6) : color,
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(

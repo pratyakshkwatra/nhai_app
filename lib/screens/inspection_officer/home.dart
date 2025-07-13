@@ -512,20 +512,83 @@ class _InspectionHomeState extends State<InspectionHome> {
                           ),
                           GestureDetector(
                             onTap: () async {
-                              await widget.authService.logout().then((value) {
-                                if (context.mounted) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) {
-                                        return LoginScreen(
-                                          authService: widget.authService,
-                                        );
-                                      },
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                barrierDismissible: true,
+                                builder: (context) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                  title: Row(
+                                    children: [
+                                      Icon(Icons.logout,
+                                          color: Colors.black),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Confirm Logout',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  content: Text(
+                                    'Are you sure you want to log out?',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      color: Colors.black87,
                                     ),
-                                  );
-                                }
-                              });
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: Text(
+                                        'Cancel',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.redAccent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text(
+                                        'Logout',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirmed == true) {
+                                await widget.authService.logout().then((value) {
+                                  if (context.mounted) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LoginScreen(
+                                          authService: widget.authService,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                });
+                              }
                             },
                             child: Container(
                               decoration: BoxDecoration(

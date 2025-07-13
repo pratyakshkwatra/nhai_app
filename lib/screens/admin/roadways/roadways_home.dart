@@ -27,32 +27,27 @@ class RoadwaysHome extends StatefulWidget {
   State<RoadwaysHome> createState() => _RoadwaysHomeState();
 }
 
+List<Roadway> _allRoadways = [];
+List<Roadway> _filteredRoadways = [];
+
 class _RoadwaysHomeState extends State<RoadwaysHome> {
   Set<int> expandedTiles = {};
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _loadRoadways();
   }
 
-  Future<List<Roadway>> getRoadways() async {
-    try {
-      List<Roadway> roadways = await AdminApi().listRoadways();
-
-      return roadways;
-    } catch (_) {
-      return [];
-    }
-  }
-
-  Future<List<Lane>> getLanes(int roadwayID) async {
-    try {
-      List<Lane> lanes = await AdminApi().getLanes(roadwayID);
-
-      return lanes;
-    } catch (_) {
-      return [];
-    }
+  void _filterRoadways(String query) {
+    setState(() {
+      _filteredRoadways = _allRoadways.where((r) {
+        final nameMatch = r.name.toLowerCase().contains(query.toLowerCase());
+        final idMatch = r.roadwayId.toString().contains(query);
+        return nameMatch || idMatch;
+      }).toList();
+    });
   }
 
   Widget roadwayCard(Roadway roadway, int index) {
@@ -223,57 +218,69 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                   setState(() {});
                                 }
                               } else if (value == 'delete') {
-                                final confirm = await showDialog<bool>(
+                                final confirmed = await showDialog<bool>(
                                   context: context,
+                                  barrierDismissible: true,
                                   builder: (context) => AlertDialog(
-                                    backgroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(16)),
-                                    title: Text(
-                                      "Deletion Confirmation",
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 18,
-                                        color: Colors.black,
-                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    backgroundColor: Colors.white,
+                                    title: Row(
+                                      children: [
+                                        Icon(Icons.delete, color: Colors.black),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Confirm Deletion',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     content: Text(
-                                      "Are you sure you want to delete this Roadway Listing?",
+                                      'Are you sure you want to delete this roadway?',
                                       style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
                                         color: Colors.black87,
                                       ),
                                     ),
-                                    actionsPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 8),
                                     actions: [
                                       TextButton(
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.black,
-                                          textStyle: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w500),
-                                        ),
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text("No"),
+                                        child: Text(
+                                          'No',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.black,
+                                          ),
+                                        ),
                                       ),
-                                      TextButton(
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.redAccent,
-                                          textStyle: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w600),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.redAccent,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
                                         ),
                                         onPressed: () =>
                                             Navigator.pop(context, true),
-                                        child: const Text("Yes"),
+                                        child: Text(
+                                          'Yes',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 );
 
-                                if (confirm == true) {
+                                if (confirmed == true) {
                                   try {
                                     await AdminApi().deleteRoadway(
                                       roadway.id,
@@ -638,8 +645,9 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                                                               color: Colors.redAccent,
                                                                               backgroundColor: Colors.black,
                                                                             ),
-                                                                            Text(
+                                                                            AutoSizeText(
                                                                               ReCase(lane.data!.statusMsg).titleCase,
+                                                                              maxLines: 1,
                                                                               style: GoogleFonts.poppins(
                                                                                 fontWeight: FontWeight.w500,
                                                                                 fontSize: 12,
@@ -666,50 +674,74 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
                                                                       ),
                                                                       onPressed:
                                                                           () async {
-                                                                        final confirm =
+                                                                        final confirmed =
                                                                             await showDialog<bool>(
                                                                           context:
                                                                               context,
+                                                                          barrierDismissible:
+                                                                              true,
                                                                           builder: (context) =>
                                                                               AlertDialog(
+                                                                            shape:
+                                                                                RoundedRectangleBorder(
+                                                                              borderRadius: BorderRadius.circular(20),
+                                                                            ),
                                                                             backgroundColor:
                                                                                 Colors.white,
-                                                                            shape:
-                                                                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                                                             title:
+                                                                                Row(
+                                                                              children: [
+                                                                                Icon(Icons.delete, color: Colors.black),
+                                                                                SizedBox(width: 8),
                                                                                 Text(
-                                                                              "Delete Lane?",
-                                                                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.black),
+                                                                                  'Confirm Deletion',
+                                                                                  style: GoogleFonts.poppins(
+                                                                                    fontWeight: FontWeight.bold,
+                                                                                    color: Colors.black,
+                                                                                  ),
+                                                                                ),
+                                                                              ],
                                                                             ),
                                                                             content:
                                                                                 Text(
-                                                                              "Are you sure you want to delete this lane?",
-                                                                              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+                                                                              'Are you sure you want to delete this lane?',
+                                                                              style: GoogleFonts.poppins(
+                                                                                fontSize: 16,
+                                                                                color: Colors.black87,
+                                                                              ),
                                                                             ),
-                                                                            actionsPadding:
-                                                                                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                                                             actions: [
                                                                               TextButton(
-                                                                                style: TextButton.styleFrom(
-                                                                                  foregroundColor: Colors.black,
-                                                                                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                                                                                ),
                                                                                 onPressed: () => Navigator.pop(context, false),
-                                                                                child: const Text("No"),
+                                                                                child: Text(
+                                                                                  'No',
+                                                                                  style: GoogleFonts.poppins(
+                                                                                    fontWeight: FontWeight.w500,
+                                                                                    color: Colors.black,
+                                                                                  ),
+                                                                                ),
                                                                               ),
-                                                                              TextButton(
-                                                                                style: TextButton.styleFrom(
-                                                                                  foregroundColor: Colors.redAccent,
-                                                                                  textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                                                              ElevatedButton(
+                                                                                style: ElevatedButton.styleFrom(
+                                                                                  backgroundColor: Colors.redAccent,
+                                                                                  shape: RoundedRectangleBorder(
+                                                                                    borderRadius: BorderRadius.circular(10),
+                                                                                  ),
                                                                                 ),
                                                                                 onPressed: () => Navigator.pop(context, true),
-                                                                                child: const Text("Yes"),
+                                                                                child: Text(
+                                                                                  'Yes',
+                                                                                  style: GoogleFonts.poppins(
+                                                                                    color: Colors.white,
+                                                                                    fontWeight: FontWeight.w600,
+                                                                                  ),
+                                                                                ),
                                                                               ),
                                                                             ],
                                                                           ),
                                                                         );
 
-                                                                        if (confirm ==
+                                                                        if (confirmed ==
                                                                             true) {
                                                                           try {
                                                                             await AdminApi().deleteLane(lane.id);
@@ -811,72 +843,91 @@ class _RoadwaysHomeState extends State<RoadwaysHome> {
     );
   }
 
+  Future<void> _loadRoadways() async {
+    try {
+      List<Roadway> roadways = await AdminApi().listRoadways();
+      setState(() {
+        _allRoadways = roadways;
+        _filteredRoadways = roadways;
+      });
+    } catch (_) {
+      setState(() {
+        _allRoadways = [];
+        _filteredRoadways = [];
+      });
+    }
+  }
+
+  Future<List<Lane>> getLanes(int roadwayID) async {
+    try {
+      return await AdminApi().getLanes(roadwayID);
+    } catch (_) {
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: getRoadways(),
-        builder: (context, asyncSnapshot) {
-          if (!asyncSnapshot.hasData) {
-            return ClipRRect(
-              borderRadius: BorderRadiusGeometry.circular(24),
-              child: Shimmer(
-                color: Colors.white,
-                colorOpacity: 0.75,
-                child: Container(
-                  color: Colors.grey.shade300,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterRoadways,
+              style: GoogleFonts.poppins(color: Colors.black),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search, color: Colors.black),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.black),
+                  onPressed: _loadRoadways,
+                ),
+                hintText: "Search roadways...",
+                hintStyle: GoogleFonts.poppins(color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
                 ),
               ),
-            );
-          }
-
-          List<Roadway> roadways = asyncSnapshot.data!;
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
             ),
-            child: roadways.isEmpty
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        "No Data Available",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 24,
-                        ),
+          ),
+          Expanded(
+            child: _filteredRoadways.isEmpty
+                ? Center(
+                    child: Text(
+                      "No Data Available",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 24,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: Text(
-                          "Click the add (+) icon in the top right corner to add a new inspection officer account",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w300,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   )
                 : ListView.builder(
-                    itemCount: roadways.length,
+                    itemCount: _filteredRoadways.length,
                     itemBuilder: (context, index) {
-                      final Roadway roadway = roadways[index];
-
+                      final Roadway roadway = _filteredRoadways[index];
                       return GestureDetector(
                         onTap: () {},
                         child: roadwayCard(roadway, index),
                       );
                     },
                   ),
-          );
-        });
+          ),
+        ],
+      ),
+    );
   }
 }

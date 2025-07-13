@@ -207,44 +207,70 @@ class _UsersHomeState extends State<UsersHome> {
                                   );
                                   _loadOfficers();
                                 } else if (value == 'delete') {
-                                  final confirm = await showDialog<bool>(
+                                  final confirmed = await showDialog<bool>(
                                     context: context,
+                                    barrierDismissible: true,
                                     builder: (context) => AlertDialog(
-                                      backgroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
-                                      title: Text("Deletion Confirmation",
-                                          style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.black)),
+                                      backgroundColor: Colors.white,
+                                      title: Row(
+                                        children: [
+                                          Icon(Icons.delete,
+                                              color: Colors.black),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Confirm Deletion',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                       content: Text(
-                                        "Are you sure you want to delete this officer account?",
+                                        'Are you sure you want to delete this account?',
                                         style: GoogleFonts.poppins(
-                                            fontWeight: FontWeight.w400,
-                                            color: Colors.black87),
+                                          fontSize: 16,
+                                          color: Colors.black87,
+                                        ),
                                       ),
                                       actions: [
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(context, false),
-                                          child: Text("No",
-                                              style: GoogleFonts.poppins(
-                                                  color: Colors.black)),
+                                          child: Text(
+                                            'No',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black,
+                                            ),
+                                          ),
                                         ),
-                                        TextButton(
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.redAccent,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
                                           onPressed: () =>
                                               Navigator.pop(context, true),
-                                          child: Text("Yes",
-                                              style: GoogleFonts.poppins(
-                                                  color: Colors.redAccent,
-                                                  fontWeight: FontWeight.w600)),
+                                          child: Text(
+                                            'Yes',
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
                                   );
 
-                                  if (confirm == true) {
+                                  if (confirmed == true) {
                                     try {
                                       await AdminApi()
                                           .deleteOfficer(inspectionOfficer.id);

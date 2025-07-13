@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:nhai_app/api/admin_api.dart';
 import 'package:nhai_app/api/exceptions.dart';
 import 'package:nhai_app/api/models/user.dart';
 import 'package:nhai_app/services/auth.dart';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
 class AddLane extends StatefulWidget {
@@ -25,10 +25,8 @@ class AddLane extends StatefulWidget {
 
 class _AddLaneState extends State<AddLane> {
   bool _isLoading = false;
-  Uint8List? _videoBytes;
-  Uint8List? _excelBytes;
-  String? _videoName;
-  String? _excelName;
+  File? _videoFile;
+  File? _excelFile;
 
   String _selectedDirection = 'L';
   String _selectedLaneNumber = '1';
@@ -38,7 +36,9 @@ class _AddLaneState extends State<AddLane> {
   Future<void> _submit() async {
     final laneId = "$_selectedDirection$_selectedLaneNumber";
 
-    if (_videoBytes == null || _excelBytes == null) {
+    if (_selectedLaneNumber.isEmpty ||
+        _videoFile == null ||
+        _excelFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("All fields are required",
             style: GoogleFonts.poppins(color: Colors.white)),
@@ -60,10 +60,8 @@ class _AddLaneState extends State<AddLane> {
         roadwayId: widget.roadwayId,
         laneId: laneId,
         direction: _selectedDirection,
-        videoBytes: _videoBytes!,
-        videoName: _videoName!,
-        excelBytes: _excelBytes!,
-        excelName: _excelName!,
+        videoFile: _videoFile!,
+        excelFile: _excelFile!,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -99,32 +97,27 @@ class _AddLaneState extends State<AddLane> {
   }
 
   Future<void> _pickFile(bool isVideo) async {
-    if (_pickingFile) return;
-    setState(() => _pickingFile = true);
+    if (!_pickingFile) {
+      setState(() => _pickingFile = true);
 
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: isVideo ? FileType.video : FileType.custom,
-        allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
-        withData: true,
-      );
+      try {
+        final result = await FilePicker.platform.pickFiles(
+          type: isVideo ? FileType.video : FileType.custom,
+          allowedExtensions: isVideo ? null : ['xlsx', 'xls'],
+        );
 
-      if (result != null) {
-        final fileBytes = result.files.first.bytes;
-        final fileName = result.files.first.name;
-
-        setState(() {
-          if (isVideo) {
-            _videoBytes = fileBytes;
-            _videoName = fileName;
-          } else {
-            _excelBytes = fileBytes;
-            _excelName = fileName;
-          }
-        });
+        if (result != null && result.files.single.path != null) {
+          setState(() {
+            if (isVideo) {
+              _videoFile = File(result.files.single.path!);
+            } else {
+              _excelFile = File(result.files.single.path!);
+            }
+          });
+        }
+      } finally {
+        setState(() => _pickingFile = false);
       }
-    } finally {
-      setState(() => _pickingFile = false);
     }
   }
 
@@ -172,17 +165,17 @@ class _AddLaneState extends State<AddLane> {
               const SizedBox(height: 16),
               _FilePickerCard(
                 label: 'Pick Video File',
-                fileName: _videoName,
-                bytes: _videoBytes,
+                file: _videoFile,
                 icon: Icons.videocam_rounded,
+                fileType: 'video',
                 onTap: () => _pickFile(true),
               ),
               const SizedBox(height: 12),
               _FilePickerCard(
                 label: 'Pick Excel Sheet',
-                fileName: _excelName,
-                bytes: _excelBytes,
+                file: _excelFile,
                 icon: Icons.grid_on_rounded,
+                fileType: 'excel',
                 onTap: () => _pickFile(false),
               ),
               if (_isLoading)
@@ -193,7 +186,7 @@ class _AddLaneState extends State<AddLane> {
                       alignment: Alignment.center,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadiusGeometry.circular(12),
                           child: LinearProgressIndicator(
                             value: _uploadProgress,
                             color: Colors.redAccent,
@@ -303,16 +296,16 @@ class _RoundedButton extends StatelessWidget {
 
 class _FilePickerCard extends StatelessWidget {
   final String label;
-  final String? fileName;
-  final Uint8List? bytes;
+  final File? file;
   final IconData icon;
+  final String fileType;
   final VoidCallback onTap;
 
   const _FilePickerCard({
     required this.label,
-    required this.fileName,
-    required this.bytes,
+    required this.file,
     required this.icon,
+    required this.fileType,
     required this.onTap,
   });
 
@@ -324,7 +317,8 @@ class _FilePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fileSize = bytes != null ? _formatBytes(bytes!.length) : null;
+    final fileName = file?.path.split('/').last;
+    final fileSize = file != null ? _formatBytes(file!.lengthSync()) : null;
 
     return InkWell(
       onTap: onTap,
@@ -341,7 +335,7 @@ class _FilePickerCard extends StatelessWidget {
             Icon(icon, size: 32, color: Colors.black54),
             const SizedBox(width: 16),
             Expanded(
-              child: bytes != null
+              child: file != null
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

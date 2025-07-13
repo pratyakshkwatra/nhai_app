@@ -1,8 +1,9 @@
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 
 class PlaybackSpeedSelector extends StatefulWidget {
-  final VideoPlayerController controller;
+  final BetterPlayerController controller;
 
   const PlaybackSpeedSelector({super.key, required this.controller});
 
@@ -11,17 +12,20 @@ class PlaybackSpeedSelector extends StatefulWidget {
 }
 
 class _PlaybackSpeedSelectorState extends State<PlaybackSpeedSelector> {
-  final List<double> speeds = [0.25, 0.5, 1, 2, 4, 8];
+  final List<double> speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
   double selectedSpeed = 1;
 
   @override
   void initState() {
+    if (widget.controller.isVideoInitialized() ?? false) {
+      selectedSpeed = widget.controller.videoPlayerController!.value.speed;
+    }
+
     super.initState();
-    selectedSpeed = widget.controller.value.playbackSpeed;
   }
 
   void _changeSpeed(double speed) {
-    widget.controller.setPlaybackSpeed(speed);
+    widget.controller.setSpeed(speed);
     setState(() => selectedSpeed = speed);
   }
 
@@ -37,21 +41,21 @@ class _PlaybackSpeedSelectorState extends State<PlaybackSpeedSelector> {
         borderRadius: BorderRadius.circular(12),
       ),
       itemBuilder: (context) => speeds
-          .map((speed) => PopupMenuItem(
+          .map((speed) => PopupMenuItem<double>(
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
                 value: speed,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "${speed}x",
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
+                child: Text(
+                  '${speed}x',
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
                   ),
                 ),
               ))
@@ -61,7 +65,7 @@ class _PlaybackSpeedSelectorState extends State<PlaybackSpeedSelector> {
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 2,
@@ -69,12 +73,14 @@ class _PlaybackSpeedSelectorState extends State<PlaybackSpeedSelector> {
             )
           ],
         ),
-        child: Text(
-          "${selectedSpeed}x",
+        child: AutoSizeText(
+          '${selectedSpeed}x',
+          maxLines: 1,
+          overflow: TextOverflow.visible,
           style: const TextStyle(
-            color: Colors.black,
             fontSize: 16,
             fontWeight: FontWeight.w500,
+            color: Colors.black,
           ),
         ),
       ),

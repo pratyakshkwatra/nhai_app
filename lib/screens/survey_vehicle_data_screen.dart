@@ -1,6 +1,5 @@
 import 'dart:async';
-
-import 'package:chewie/chewie.dart';
+import 'package:better_player_enhanced/better_player.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +17,6 @@ import 'package:nhai_app/models/survey_frame.dart';
 import 'package:nhai_app/models/warning.dart';
 import 'package:nhai_app/screens/warnings.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
-import 'package:video_player/video_player.dart';
 import 'package:latlong2/latlong.dart';
 
 class SurveyVehicleDataScreen extends StatefulWidget {
@@ -49,16 +47,13 @@ final List<double> areaValues = [];
 
 final List<Warning> warnings = [];
 
-VideoPlayerController? videoPlayerController;
-
-ChewieController? chewieController;
-
-Chewie? playerWidget;
 late List<SurveyFrame> processedFrames;
 int previousFrameIndex = 0;
+Widget? playerWidget;
 
 class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
     with TickerProviderStateMixin {
+  late BetterPlayerController videoPlayerController;
   Duration endDuration = Duration.zero;
   bool videoPaused = true;
   late final AnimatedMapController animatedMapController;
@@ -73,68 +68,57 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
 
   @override
   void initState() {
-    super.initState();
     warnings.clear();
     trackPoints.clear();
     polyLines.clear();
     animatedMapController = AnimatedMapController(vsync: this);
-    videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoPath),
-    );
-    chewieController = ChewieController(
-      videoPlayerController: videoPlayerController!,
-      autoPlay: false,
-      looping: false,
-      draggableProgressBar: false,
-      showControls: true,
-      aspectRatio: 0.52,
-      allowMuting: false,
-      allowPlaybackSpeedChanging: false,
-      showOptions: false,
-      allowFullScreen: true,
-      customControls: Align(
-        alignment: Alignment.bottomRight,
-        child: GestureDetector(
-          onTap: () {
-            if (chewieController!.isFullScreen) {
-              chewieController!.exitFullScreen();
-            } else {
-              chewieController!.enterFullScreen();
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8, right: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.fullscreen,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-          ),
-        ),
+    BetterPlayerDataSource betterPlayerDataSource = BetterPlayerDataSource(
+      BetterPlayerDataSourceType.network,
+      widget.videoPath,
+      cacheConfiguration: BetterPlayerCacheConfiguration(
+        useCache: true,
+        preCacheSize: 25 * 1024 * 1024,
+        maxCacheSize: 25 * 1024 * 1024,
+        maxCacheFileSize: 25 * 1024 * 1024,
       ),
     );
 
-    playerWidget = Chewie(
-      controller: chewieController!,
+    videoPlayerController = BetterPlayerController(
+        BetterPlayerConfiguration(
+          aspectRatio: 0.52,
+          fit: BoxFit.cover,
+          controlsConfiguration: BetterPlayerControlsConfiguration(
+            enableAudioTracks: false,
+            enableFullscreen: true,
+            enableMute: true,
+            enableOverflowMenu: false,
+            enablePip: false,
+            enablePlayPause: true,
+            enablePlaybackSpeed: false,
+            enableProgressBar: false,
+            enableProgressBarDrag: false,
+            enableProgressText: false,
+            enableQualities: false,
+            enableRetry: false,
+            enableSkips: true,
+            enableSubtitles: false,
+            iconsColor: Colors.white,
+            showControls: true,
+            showControlsOnInitialize: false,
+          ),
+        ),
+        betterPlayerDataSource: betterPlayerDataSource);
+
+    playerWidget = BetterPlayer(
+      controller: videoPlayerController,
     );
 
-    videoPlayerController!.initialize().then((_) {
-      setState(() {
-        endDuration = videoPlayerController!.value.duration;
-      });
-    });
+    super.initState();
   }
 
   @override
   void dispose() {
-    videoPlayerController!.dispose();
-    chewieController!.dispose();
+    videoPlayerController.dispose();
     animatedMapController.dispose();
 
     super.dispose();
@@ -539,6 +523,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
       final ts = Duration(milliseconds: int.tryParse(row.last.toString()) ?? 0);
       final lat = double.tryParse(row[13].toString());
       final lng = double.tryParse(row[14].toString());
+
       return SurveyFrame(
         timestamp: ts,
         position: (lat != null && lng != null) ? LatLng(lat, lng) : null,
@@ -595,11 +580,22 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                   if (snapshot.hasError) {
                     return Center(child: Text("Error: ${snapshot.error}"));
                   }
+
                   return ValueListenableBuilder(
-                    valueListenable: videoPlayerController!,
+                    valueListenable:
+                        videoPlayerController.videoPlayerController!,
                     builder: (context, value, _) {
+                      if (!mounted ||
+                          videoPlayerController.videoPlayerController == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
                       final position = value.position;
                       final duration = value.duration;
+
+                      if (duration == null) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
                       final List<SurveyFrame> frames = processedFrames;
                       if (frames.isEmpty) {
@@ -658,8 +654,10 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                     zoom: 15.0,
                                     duration: Duration(
                                       milliseconds: (500 /
-                                              videoPlayerController!
-                                                  .value.playbackSpeed)
+                                              videoPlayerController
+                                                  .videoPlayerController!
+                                                  .value
+                                                  .speed)
                                           .round(),
                                     ),
                                     curve: Curves.easeInSine,
@@ -710,16 +708,16 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
 
                       previousFrameIndex = currentFrameIndex;
 
-                      if (position == duration) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          videoPlayerController!.pause();
-                          if (mounted && !videoPaused) {
-                            setState(() {
-                              videoPaused = true;
-                            });
-                          }
-                        });
-                      }
+                      // if (position == duration) {
+                      //   WidgetsBinding.instance.addPostFrameCallback((_) {
+                      //     videoPlayerController!.pause();
+                      //     if (mounted && !videoPaused) {
+                      //       setState(() {
+                      //         videoPaused = true;
+                      //       });
+                      //     }
+                      //   });
+                      // }
 
                       final frame = frames[currentFrameIndex];
 
@@ -763,7 +761,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                     ),
                                     GestureDetector(
                                       onTap: () {
-                                        videoPlayerController!.pause();
+                                        videoPlayerController.pause();
                                         Navigator.push(context,
                                             MaterialPageRoute(builder:
                                                 (BuildContext context) {
@@ -772,6 +770,9 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                             videoPath: widget.videoPath,
                                             surveyName:
                                                 "${widget.roadWay} - ${widget.lane}",
+                                            videoPlayerController:
+                                                videoPlayerController,
+                                            polyLines: polyLines,
                                           );
                                         }));
                                       },
@@ -878,7 +879,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                 0.40,
                                         width:
                                             MediaQuery.of(context).size.width *
-                                                0.45,
+                                                0.5,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius:
@@ -886,7 +887,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                         ),
                                         child: ClipRRect(
                                           borderRadius:
-                                              BorderRadius.circular(16),
+                                              BorderRadiusGeometry.circular(12),
                                           child: playerWidget,
                                         ),
                                       ),
@@ -897,7 +898,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                 0.40,
                                         width:
                                             MediaQuery.of(context).size.width *
-                                                0.45,
+                                                0.40,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius:
@@ -1092,7 +1093,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                 ),
                                                 child: Slider(
                                                   min: 0,
-                                                  max: duration.inSeconds
+                                                  max: duration!.inSeconds
                                                       .toDouble()
                                                       .clamp(
                                                           1, double.infinity),
@@ -1105,7 +1106,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                         Duration(
                                                             seconds:
                                                                 value.toInt());
-                                                    videoPlayerController!
+                                                    videoPlayerController
                                                         .seekTo(newDuration);
                                                   },
                                                 ),
@@ -1136,7 +1137,7 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                         Expanded(
                                           flex: 5,
                                           child: PlaybackSpeedSelector(
-                                            controller: videoPlayerController!,
+                                            controller: videoPlayerController,
                                           ),
                                         ),
                                         Expanded(
@@ -1159,13 +1160,15 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                               GestureDetector(
                                                 onTap: () {
                                                   HapticFeedback.lightImpact();
-                                                  videoPlayerController!.seekTo(
-                                                    (videoPlayerController!
+                                                  videoPlayerController.seekTo(
+                                                    (videoPlayerController
+                                                                .videoPlayerController!
                                                                 .value
                                                                 .position
                                                                 .inSeconds) >
                                                             10
-                                                        ? videoPlayerController!
+                                                        ? videoPlayerController
+                                                                .videoPlayerController!
                                                                 .value
                                                                 .position -
                                                             Duration(
@@ -1185,13 +1188,13 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                                     setstateInner(() {
                                                       videoPaused = false;
                                                     });
-                                                    videoPlayerController!
+                                                    videoPlayerController
                                                         .play();
                                                   } else {
                                                     setstateInner(() {
                                                       videoPaused = true;
                                                     });
-                                                    videoPlayerController!
+                                                    videoPlayerController
                                                         .pause();
                                                   }
                                                 },
@@ -1205,23 +1208,28 @@ class _SurveyVehicleDataScreenState extends State<SurveyVehicleDataScreen>
                                               GestureDetector(
                                                 onTap: () {
                                                   HapticFeedback.lightImpact();
-                                                  videoPlayerController!.seekTo(
-                                                    (videoPlayerController!
+                                                  videoPlayerController.seekTo(
+                                                    (videoPlayerController
+                                                                    .videoPlayerController!
                                                                     .value
                                                                     .position
                                                                     .inSeconds +
                                                                 10) <
-                                                            videoPlayerController!
+                                                            videoPlayerController
+                                                                .videoPlayerController!
                                                                 .value
-                                                                .duration
+                                                                .duration!
                                                                 .inSeconds
-                                                        ? videoPlayerController!
+                                                        ? videoPlayerController
+                                                                .videoPlayerController!
                                                                 .value
                                                                 .position +
                                                             Duration(
                                                                 seconds: 10)
-                                                        : videoPlayerController!
-                                                            .value.duration,
+                                                        : videoPlayerController
+                                                            .videoPlayerController!
+                                                            .value
+                                                            .duration!,
                                                   );
                                                 },
                                                 child: Icon(

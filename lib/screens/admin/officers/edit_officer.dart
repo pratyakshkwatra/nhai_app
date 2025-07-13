@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,9 +30,9 @@ class EditOfficerScreen extends StatefulWidget {
 class _EditOfficerScreenState extends State<EditOfficerScreen> {
   late TextEditingController _usernameController;
   final TextEditingController _passwordController = TextEditingController();
-  Uint8List? _profileImageBytes;
-  String? _imageFilename;
+  File? _newProfileImage;
   bool _isLoading = false;
+  final bool _isLoadingDelete = false;
 
   @override
   void initState() {
@@ -41,12 +43,10 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      final bytes = await picked.readAsBytes();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
       setState(() {
-        _profileImageBytes = bytes;
-        _imageFilename = picked.name;
+        _newProfileImage = File(image.path);
       });
     }
   }
@@ -78,8 +78,7 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
         widget.inspectionOfficer.id,
         _usernameController.text.isNotEmpty ? _usernameController.text : null,
         _passwordController.text.isNotEmpty ? _passwordController.text : null,
-        bytes: _profileImageBytes,
-        filename: _imageFilename,
+        _newProfileImage,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,16 +140,16 @@ class _EditOfficerScreenState extends State<EditOfficerScreen> {
                     child: CircleAvatar(
                       radius: 48,
                       backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _profileImageBytes != null
-                          ? MemoryImage(_profileImageBytes!)
-                          : (currentProfilePic.isNotEmpty
+                      backgroundImage: _newProfileImage != null
+                          ? FileImage(_newProfileImage!)
+                          : (currentProfilePic != ""
                               ? NetworkImage(currentProfilePic)
                               : null) as ImageProvider?,
-                      child: (_profileImageBytes == null &&
-                              currentProfilePic.isEmpty)
-                          ? const Icon(Icons.person,
-                              size: 48, color: Colors.black)
-                          : null,
+                      child:
+                          (_newProfileImage == null && currentProfilePic == "")
+                              ? const Icon(Icons.person,
+                                  size: 48, color: Colors.black)
+                              : null,
                     ),
                   ),
                   Positioned(
@@ -295,7 +294,7 @@ class _RoundedButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onPressed == null ? color.withOpacity(0.6) : color,
+      color: onPressed == null ? color.withValues(alpha: 0.6) : color,
       elevation: 2,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(

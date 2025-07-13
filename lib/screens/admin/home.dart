@@ -89,7 +89,7 @@ class _AdminHomeState extends State<AdminHome> {
         ),
         height: MediaQuery.of(context).size.height,
         child: SafeArea(
-          bottom: false,
+          bottom: selectedIndex == 2 ? true: false,
           child: Padding(
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).size.height * 0.0125,

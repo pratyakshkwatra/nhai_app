@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,8 +17,7 @@ class EditRoadwayScreen extends StatefulWidget {
 class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
   final TextEditingController _roadwayIdController = TextEditingController();
   final TextEditingController _roadwayNameController = TextEditingController();
-  Uint8List? _roadwayImageBytes;
-  String? _imageFilename;
+  File? _roadwayImage;
   bool _isUpdating = false;
 
   @override
@@ -32,10 +31,8 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      final bytes = await picked.readAsBytes();
       setState(() {
-        _roadwayImageBytes = bytes;
-        _imageFilename = picked.name;
+        _roadwayImage = File(picked.path);
       });
     }
   }
@@ -60,8 +57,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
         widget.roadway.id,
         _roadwayNameController.text,
         _roadwayIdController.text,
-        imageBytes: _roadwayImageBytes,
-        filename: _imageFilename,
+        imageFile: _roadwayImage,
       );
 
       if (mounted) {
@@ -121,9 +117,9 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
                       decoration: BoxDecoration(
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(16),
-                        image: _roadwayImageBytes != null
+                        image: _roadwayImage != null
                             ? DecorationImage(
-                                image: MemoryImage(_roadwayImageBytes!),
+                                image: FileImage(_roadwayImage!),
                                 fit: BoxFit.cover,
                               )
                             : (widget.roadway.imagePath != null &&
@@ -136,7 +132,7 @@ class _EditRoadwayScreenState extends State<EditRoadwayScreen> {
                                 : null,
                       ),
                       alignment: Alignment.center,
-                      child: _roadwayImageBytes == null &&
+                      child: _roadwayImage == null &&
                               (widget.roadway.imagePath == null ||
                                   widget.roadway.imagePath!.isEmpty)
                           ? Icon(Icons.add_photo_alternate,
