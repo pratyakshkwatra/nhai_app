@@ -1,92 +1,177 @@
 # NHAI Inspection Flutter App
 
-> ⚡ Road Inspection. Reimagined. Realtime.
-
-## 🔍 Overview
-
-This Flutter app is the front-end companion to the NHAI Middleware engine, helping inspectors visualize video + sensor data in real time and spot issues quickly and clearly.
-
-It syncs processed data from survey vehicles with video playback and maps, showing roughness, rutting, cracks, and ravelling live with warnings.
+> ⚡ Road Inspection. Reimagined. Real-time. Cloud-powered.
 
 ---
 
-## 🌐 Features
+## 🔍 Overview
 
-- 🎥 Video playback synced with road sensor data
-- 📍 Live road map with polylines and marker warnings
-- 🔍 Abnormal value detection (roughness, rut, crack, ravelling)
-- 📊 Dynamic graphs and warning history
-- 📲 Native sharing of survey summaries and video clips
-- ⌚ FlutterMap integration for offline/online tiles
+The **NHAI Inspection App** is the official frontend to our intelligent road inspection system, powered by a cloud backend (AWS hosted `nhai_backend`) and the OCR enabled `nhai_middleware` fusion engine.
+
+Originally designed as a local only inspection tool, the app has evolved into a robust multi - user platform that connects **Admins** and **Inspection Officers** to survey data, video feeds, and real-time alerts — all through a central server.
+
+The app enables seamless:
+* **Survey uploads (video + sensor excel)**
+* **Data fusion using our OCR engine**
+* **Cloud-based processing and sharing**
+* **Inspector access control**
+
+---
+
+## ✨ New Features (v2.0)
+
+### 🧑‍💼 Authentication & User Roles
+
+* **Admin & Inspection Officer** account types
+* **Login system** and **admin account creation**
+* Secure profile creation with username, password, and photo
+
+### 🚣️ Roadway & Lane Management
+
+* Admins can **create, search, edit, and delete** roadway entries
+* Add roadway banners, ID (e.g., *NH148N*), and name
+* Control officer access per roadway
+
+### 📹 Lane Data Upload + Fusion
+
+* Add lanes with direction (left/right) and lane number
+* Upload survey vehicle **video + Excel sensor data**
+* Server auto-compresses data and runs OCR-based fusion
+* Ready-to-inspect output available post processing
+
+### 🚁️ Smart Survey Inspection
+
+* View **video footage synced with GPS & sensor data**
+* Live **graphical + tabular display** of lane sensor info
+* Interactive **FlutterMap** with:
+
+  * GPS polylines
+  * Warning markers for abnormalities
+
+### ⚠️ Warning System & Playback
+
+* Real-time abnormality detection (cracks, rutting, roughness, ravelling)
+* When triggered:
+
+  * Marker added on the map
+  * Warning card appears in *Warnings* tab
+  * Tap to view:
+
+    * Clip (5s before + 5s after warning)
+    * HD GPS data
+    * Share Google Maps link + issue summary + video
+
+---
+
+## 🌐 Architecture
+
+```
+                        ┌───────────────────────┐
+                        │   Flutter App         │
+                        │ (nhai_app)            │
+                        └──────┬────────────────┘
+                               │ REST
+                               ▼
+                        ┌───────────────────────┐
+                        │   Backend (FastAPI)   │
+                        │   nhai_backend        │
+                        └──────┬────────────────┘
+                               │ Async Job Queue
+                               ▼
+                        ┌───────────────────────┐
+                        │ Fusion Engine         │
+                        │ (nhai_middleware)     │
+                        └───────────────────────┘
+```
 
 ---
 
 ## 📁 Project Structure
+
 ```
 nhai_app/
-├── assets/                  # Video, CSV, and images
+├── assets/                  # Screenshots, images
 ├── lib/
-│   ├── models/              # SurveyFrame, Warning, etc.
-│   ├── screens/             # HomeScreen, SurveyScreen
-│   ├── components/          # Custom UI components
+│   ├── api/                 # HTTP client and endpoints
+│   ├── auth/                # Login, registration, session
+│   ├── models/              # Roadway, Lane, Warning, User
+│   ├── screens/             # Admin panel, survey UI, login
+│   ├── components/          # UI widgets
 ├── pubspec.yaml
 └── README.md
 ```
 
 ---
 
-## 🗂️ Installation
+## 🛠️ Installation
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/pratyakshkwatra/nhai_app.git
 cd nhai_app
 ```
 
 ### 2. Install dependencies
+
 ```bash
 flutter pub get
 ```
 
 ### 3. Run the app
+
 ```bash
 flutter run
 ```
 
-Ensure that:
-- You have an emulator or device connected
-- Your assets (video, CSV, map images) are placed correctly in the assets/ directory
+> ✅ Make sure your Flutter environment is set up and connected to a device/emulator. Internet access is required to connect to the backend.
 
 ---
 
-## 🌐 Screenshots
+## 📷 Screenshots
 
-![home](assets/screenshots/home.jpeg)
-![survey](assets/screenshots/survey.jpg)
-![graph](assets/screenshots/graph.jpg)
-![warnings](assets/screenshots/warnings.jpg)
-![warnings_modal](assets/screenshots/warnings_modal.jpg)
-![home_share_message](assets/screenshots/home_share_message.jpg)
-![warnings_share_message](assets/screenshots/warnings_share_message.jpg)
-
----
-
-## 📅 Demo Flow
-
-1. Select a survey from the list
-2. See overview stats + road health
-3. Inspect: video + map + sensor data sync
-4. Warnings highlighted live
-5. Tap marker for insights and share trimmed clip
+![login](assets/screenshots/login.jpg)
+![create_account](assets/screenshots/create_account.jpg)
+![admin_officer_home](assets/screenshots/admin_officer_home.jpg)
+![add_officer](assets/screenshots/add_officer.png)
+![search_officer](assets/screenshots/search_officer.png)
+![edit_officer](assets/screenshots/edit_officer.png)
+![admin_roadway_home](assets/screenshots/admin_roadway_home.jpg)
+![roadway_home_2](assets/screenshots/roadway_home_2.jpg)
+![add_roadway](assets/screenshots/add_roadway.png)
+![edit_roadway](assets/screenshots/edit_roadway.png)
+![manage_access](assets/screenshots/manage_access.png)
+![add_lane](assets/screenshots/add_lane.jpg)
+![officer_home](assets/screenshots/officer_home.jpg)
+![survey_screen](assets/screenshots/survey_screen.jpg)
 
 ---
 
-## 👉 Contributions
-We welcome feature requests, bug reports, or pull requests. This project was built for a better inspection workflow — join us to improve it.
+## 🔄 Update Log
+
+### v2.0 — July 2025
+
+* Transitioned from local-only app to cloud-connected system
+* Introduced backend (`nhai_backend`) and hosted server (AWS)
+* Automated data fusion via `nhai_middleware`
+* Added login, user roles, and admin control
+* Introduced full CRUD for officers and roadways
+* Implemented lane-based uploads (video + Excel)
+* Live GPS + warning playback with FlutterMap
+* Video clipping and sharing for warning events
+
+---
+
+## ☛ Contributions
+
+We welcome feedback, pull requests, and collaboration. This is an evolving project designed to improve road inspection at scale.
+
+---
 
 ## 🌿 License
+
 MIT License.
 
 ---
 
-Built with ❤️ for Indian Roads by Pratyaksh Kwatra & Aarav Rai.
+Built with ❤️ for Indian Roads by [Pratyaksh Kwatra](https://github.com/pratyakshkwatra) & [Aarav Rai](https://github.com).
