@@ -174,4 +174,4 @@ MIT License.
 
 ---
 
-Built with ❤️ for Indian Roads by [Pratyaksh Kwatra](https://github.com/pratyakshkwatra) & [Aarav Rai](https://github.com).
+Built with 🛣️ and ❤️ by [Pratyaksh Kwatra](https://github.com/pratyakshkwatra) & [Aarav Rai](https://github.com/Aarav-Rai).
