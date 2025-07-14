@@ -6,7 +6,7 @@
 
 ## 🔍 Overview
 
-The **NHAI Inspection App** is the official frontend to our intelligent road inspection system, powered by a cloud backend (AWS hosted `nhai_backend`) and the OCR enabled `nhai_middleware` fusion engine.
+The **NHAI Inspection App** is the official frontend to our intelligent road inspection system, powered by a cloud backend (AWS hosted ([`nhai_backend`](https://github.com/pratyakshkwatra/nhai_backend)) ) and the OCR enabled ([`nhai_middleware`](https://github.com/pratyakshkwatra/nhai_middleware))  fusion engine.
 
 Originally designed as a local only inspection tool, the app has evolved into a robust multi - user platform that connects **Admins** and **Inspection Officers** to survey data, video feeds, and real-time alerts — all through a central server.
 
@@ -152,8 +152,8 @@ flutter run
 ### v2.0 — July 2025
 
 * Transitioned from local-only app to cloud-connected system
-* Introduced backend (`nhai_backend`) and hosted server (AWS)
-* Automated data fusion via `nhai_middleware`
+* Introduced backend ([`nhai_backend`](https://github.com/pratyakshkwatra/nhai_backend)) and hosted server (AWS)
+* Automated data fusion via ([`nhai_middleware`](https://github.com/pratyakshkwatra/nhai_middleware)) 
 * Added login, user roles, and admin control
 * Introduced full CRUD for officers and roadways
 * Implemented lane-based uploads (video + Excel)
