@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:csv/csv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -260,65 +263,189 @@ class _InspectionHomeState extends State<InspectionHome> {
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
-          Container(
-            height: MediaQuery.of(context).size.height,
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.redAccent.shade700, Colors.redAccent.shade200],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+          SafeArea(
+            top: false,
+            right: false,
+            left: false,
+            bottom: kIsWeb
+                ? false
+                : Platform.isAndroid
+                    ? true
+                    : false,
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.redAccent.shade700,
+                    Colors.redAccent.shade200
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.675),
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.of(context).size.height * 0.0125,
-                      vertical: MediaQuery.of(context).size.width * 0.0125),
-                  child: FutureBuilder(
-                    future: loadAndProcessMultipleCSVs(
-                      roadWays,
-                    ),
-                    builder: (context, asyncSnapshotMain) {
-                      if (!asyncSnapshotMain.hasData) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Shimmer(
-                            color: Colors.white,
-                            colorOpacity: 0.6,
-                            enabled: true,
-                            direction: ShimmerDirection.fromLTRB(),
-                            child: Container(
-                              height: 140,
-                              width: double.infinity,
-                              color: Colors.red.shade300,
+              child: Column(
+                children: [
+                  SizedBox(
+                      height: Platform.isAndroid
+                          ? MediaQuery.of(context).size.height * 0.65
+                          : MediaQuery.of(context).size.height * 0.675),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.height * 0.0125,
+                        vertical: MediaQuery.of(context).size.width * 0.0125),
+                    child: FutureBuilder(
+                      future: loadAndProcessMultipleCSVs(
+                        roadWays,
+                      ),
+                      builder: (context, asyncSnapshotMain) {
+                        if (!asyncSnapshotMain.hasData) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Shimmer(
+                              color: Colors.white,
+                              colorOpacity: 0.6,
+                              enabled: true,
+                              direction: ShimmerDirection.fromLTRB(),
+                              child: Container(
+                                height: 140,
+                                width: double.infinity,
+                                color: Colors.red.shade300,
+                              ),
                             ),
-                          ),
-                        );
-                      }
+                          );
+                        }
 
-                      final data = asyncSnapshotMain.data!;
-                      final distance = data["distance"];
-                      final roadHealth = data["road_health"];
-                      final roughness = data["roughness"];
-                      final rut = data["rut"];
-                      final crack = data["crack"];
-                      final ravelling = data["ravelling"];
+                        final data = asyncSnapshotMain.data!;
+                        final distance = data["distance"];
+                        final roadHealth = data["road_health"];
+                        final roughness = data["roughness"];
+                        final rut = data["rut"];
+                        final crack = data["crack"];
+                        final ravelling = data["ravelling"];
 
-                      return AnimatedOpacity(
-                        opacity: 1.0,
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOut,
-                        child: Column(
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(begin: 0, end: distance),
-                              duration: const Duration(milliseconds: 800),
-                              curve: Curves.easeOut,
-                              builder: (context, animatedDistance, _) {
-                                return Container(
+                        return AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOut,
+                          child: Column(
+                            children: [
+                              TweenAnimationBuilder<double>(
+                                tween: Tween<double>(begin: 0, end: distance),
+                                duration: const Duration(milliseconds: 800),
+                                curve: Curves.easeOut,
+                                builder: (context, animatedDistance, _) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withAlpha(220),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        AutoSizeText(
+                                          roadWays.isNotEmpty
+                                              ? "Highway Length: ${animatedDistance.toStringAsFixed(2)} KM"
+                                              : "Cumulative Distance: ${animatedDistance.toStringAsFixed(2)} KM",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            AutoSizeText(
+                                              roadWays.isNotEmpty
+                                                  ? "Highway Health:"
+                                                  : "Cumulative Health:",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              maxLines: 1,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            TweenAnimationBuilder<double>(
+                                              tween: Tween<double>(
+                                                  begin: 0, end: roadHealth),
+                                              duration: const Duration(
+                                                  milliseconds: 800),
+                                              curve: Curves.easeOut,
+                                              builder:
+                                                  (context, animatedRating, _) {
+                                                return Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 4,
+                                                      vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.transparent,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.white
+                                                            .withAlpha(180),
+                                                        offset: const Offset(
+                                                            -2, -2),
+                                                        blurRadius: 4,
+                                                      ),
+                                                      BoxShadow(
+                                                        color: Colors
+                                                            .red.shade200
+                                                            .withAlpha(130),
+                                                        offset:
+                                                            const Offset(2, 2),
+                                                        blurRadius: 4,
+                                                      ),
+                                                    ],
+                                                    border: Border.all(
+                                                      color: Colors.red.shade100
+                                                          .withAlpha(100),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: RatingBarIndicator(
+                                                    rating: animatedRating,
+                                                    itemBuilder: (context, _) =>
+                                                        const Icon(
+                                                      Icons.favorite,
+                                                      color: Colors.redAccent,
+                                                    ),
+                                                    unratedColor:
+                                                        Colors.red.shade200,
+                                                    itemCount: 5,
+                                                    itemSize: 18,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 500),
+                                child: Container(
+                                  key: ValueKey("stats_card"),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withAlpha(220),
                                     borderRadius: BorderRadius.circular(20),
@@ -333,134 +460,28 @@ class _InspectionHomeState extends State<InspectionHome> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 12),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
                                     children: [
-                                      AutoSizeText(
-                                        roadWays.isNotEmpty
-                                            ? "Highway Length: ${animatedDistance.toStringAsFixed(2)} KM"
-                                            : "Cumulative Distance: ${animatedDistance.toStringAsFixed(2)} KM",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          AutoSizeText(
-                                            roadWays.isNotEmpty
-                                                ? "Highway Health:"
-                                                : "Cumulative Health:",
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            maxLines: 1,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          TweenAnimationBuilder<double>(
-                                            tween: Tween<double>(
-                                                begin: 0, end: roadHealth),
-                                            duration: const Duration(
-                                                milliseconds: 800),
-                                            curve: Curves.easeOut,
-                                            builder:
-                                                (context, animatedRating, _) {
-                                              return Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 4,
-                                                        vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.transparent,
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.white
-                                                          .withAlpha(180),
-                                                      offset:
-                                                          const Offset(-2, -2),
-                                                      blurRadius: 4,
-                                                    ),
-                                                    BoxShadow(
-                                                      color: Colors.red.shade200
-                                                          .withAlpha(130),
-                                                      offset:
-                                                          const Offset(2, 2),
-                                                      blurRadius: 4,
-                                                    ),
-                                                  ],
-                                                  border: Border.all(
-                                                    color: Colors.red.shade100
-                                                        .withAlpha(100),
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: RatingBarIndicator(
-                                                  rating: animatedRating,
-                                                  itemBuilder: (context, _) =>
-                                                      const Icon(
-                                                    Icons.favorite,
-                                                    color: Colors.redAccent,
-                                                  ),
-                                                  unratedColor:
-                                                      Colors.red.shade200,
-                                                  itemCount: 5,
-                                                  itemSize: 18,
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
+                                      progressBarWithTitle(
+                                          "Roughness", roughness),
+                                      const SizedBox(height: 8),
+                                      progressBarWithTitle("Rut", rut),
+                                      const SizedBox(height: 8),
+                                      progressBarWithTitle("Crack", crack),
+                                      const SizedBox(height: 8),
+                                      progressBarWithTitle(
+                                          "Ravelling", ravelling),
                                     ],
                                   ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 500),
-                              child: Container(
-                                key: ValueKey("stats_card"),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(220),
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                child: Column(
-                                  children: [
-                                    progressBarWithTitle(
-                                        "Roughness", roughness),
-                                    const SizedBox(height: 8),
-                                    progressBarWithTitle("Rut", rut),
-                                    const SizedBox(height: 8),
-                                    progressBarWithTitle("Crack", crack),
-                                    const SizedBox(height: 8),
-                                    progressBarWithTitle(
-                                        "Ravelling", ravelling),
-                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Container(
